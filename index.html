@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#030912">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" type="image/png" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Jarvis">
+<title>J.A.R.V.I.S</title>
+<style>
+  :root {
+    box-sizing: border-box;
+    --bg: #030912;
+    --panel: rgba(6, 24, 50, .66);
+    --line: rgba(63, 214, 255, .34);
+    --cyan: #3fd6ff;
+    --cyan2: #7df9ff;
+    --green: #29ff8a;
+    --red: #ff4d5e;
+    --amber: #ffc857;
+    --ink: #e6f6ff;
+    --dim: #7f9fba;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Courier New", monospace;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #030912; } }
+  :root[data-theme="dark"] { --bg: #030912; }
+  *, *::before, *::after { box-sizing: inherit; }
+  [hidden] { display: none !important; }
+  html { height: 100%; scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body { height: 100%; margin: 0; overflow: hidden; background: var(--bg); color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Devanagari", sans-serif;
+    background-image: radial-gradient(ellipse at 50% -10%, rgba(20, 100, 190, .45), transparent 60%),
+      linear-gradient(rgba(63, 214, 255, .035) 1px, transparent 1px), linear-gradient(90deg, rgba(63, 214, 255, .035) 1px, transparent 1px);
+    background-size: auto, 38px 38px, 38px 38px; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--cyan2); outline-offset: 2px; }
+  .mono { font-family: var(--mono); letter-spacing: .08em; }
+
+  .app { height: 100%; display: flex; flex-direction: column; }
+  .top { flex: none; display: flex; align-items: center; gap: 12px; padding: 7px 12px; border-bottom: 1px solid var(--line); background: rgba(3, 12, 28, .8);
+    padding-left: calc(12px + env(safe-area-inset-left, 0px)); padding-right: calc(12px + env(safe-area-inset-right, 0px)); }
+  .brand { font-family: var(--mono); font-weight: 800; letter-spacing: .3em; color: var(--cyan2); text-shadow: 0 0 12px rgba(63, 214, 255, .7); font-size: 15px; white-space: nowrap; }
+  .nav { display: flex; gap: 6px; margin-left: 4px; }
+  .nav button { background: transparent; border: 1px solid var(--line); border-radius: 6px; padding: 4px 12px; font-family: var(--mono); font-size: 12px; letter-spacing: .12em; color: var(--dim); }
+  .nav button.on { color: #02121c; background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 12px rgba(63, 214, 255, .6); }
+  .stat { margin-left: auto; display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 12px; color: var(--dim); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .dot.off { background: var(--red); box-shadow: 0 0 8px var(--red); }
+  .iconbtn[aria-pressed="true"] { border-color: var(--green); box-shadow: 0 0 10px var(--green); }
+  .iconbtn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); font-size: 15px; display: grid; place-items: center; }
+  #timers { display: flex; gap: 6px; }
+  .tchip { padding: 2px 8px; border-radius: 99px; border: 1px solid rgba(255, 200, 87, .55); color: var(--amber); font-size: 11px; font-variant-numeric: tabular-nums; }
+
+  .view { flex: 1; min-height: 0; display: grid; gap: 10px; padding: 10px; padding-left: calc(10px + env(safe-area-inset-left, 0px)); padding-right: calc(10px + env(safe-area-inset-right, 0px)); }
+  #vCore { grid-template-columns: 290px minmax(0, 1fr) 350px; }
+  .sec { min-height: 0; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+  .panel { position: relative; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 10px; backdrop-filter: blur(3px); min-height: 0; }
+  .panel::before, .panel::after { content: ''; position: absolute; width: 12px; height: 12px; border: 2px solid var(--cyan); pointer-events: none; }
+  .panel::before { top: -1px; left: -1px; border-right: 0; border-bottom: 0; border-top-left-radius: 10px; }
+  .panel::after { right: -1px; bottom: -1px; border-left: 0; border-top: 0; border-bottom-right-radius: 10px; }
+  .ptitle { font-family: var(--mono); font-size: 11px; letter-spacing: .18em; color: var(--cyan2); margin: 0 0 8px; display: flex; align-items: center; gap: 8px; text-transform: uppercase; }
+  .ptitle small { margin-left: auto; color: var(--dim); letter-spacing: .06em; text-transform: none; }
+
+  /* map + news */
+  .mapbox { flex: 1.2; display: flex; flex-direction: column; }
+  #map { width: 100%; flex: 1; min-height: 130px; border-radius: 6px; background: rgba(0, 10, 24, .6); display: block; }
+  .news { flex: 1; overflow: auto; }
+  .news .h { font-size: 12.5px; line-height: 1.45; padding: 7px 0; border-bottom: 1px solid rgba(63, 214, 255, .12); color: #cfe8f8; }
+  .news .h b { color: var(--amber); font-family: var(--mono); font-size: 10px; margin-right: 6px; }
+
+  /* core */
+  .corebox { position: relative; flex: 1.4; display: flex; align-items: center; gap: 0; }
+  .nodes { display: flex; flex-direction: column; gap: 14px; z-index: 2; flex: none; }
+  .node { display: flex; align-items: center; gap: 8px; width: 150px; padding: 9px 12px; border-radius: 8px; background: rgba(8, 28, 56, .9); border: 1px solid var(--c); color: var(--ink);
+    font-family: var(--mono); font-size: 12px; letter-spacing: .12em; box-shadow: 0 0 14px color-mix(in srgb, var(--c) 35%, transparent); }
+  .node i { font-style: normal; font-size: 14px; }
+  .node:hover { background: color-mix(in srgb, var(--c) 22%, #06182e); }
+  .orbwrap { position: relative; flex: 1; min-width: 0; align-self: stretch; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; z-index: 1; }
+  #orb { width: min(100%, 330px); aspect-ratio: 1; display: block; }
+  .ostate { font-family: var(--mono); font-size: 11px; letter-spacing: .3em; color: var(--cyan2); }
+  .term { border: 1px solid var(--red); background: rgba(255, 77, 94, .12); color: #ffb3bb; font-family: var(--mono); letter-spacing: .25em; font-size: 12px; padding: 7px 18px; clip-path: polygon(8% 0, 92% 0, 100% 50%, 92% 100%, 8% 100%, 0 50%); }
+  #links { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: visible; }
+  #links path { fill: none; stroke-width: 2; filter: drop-shadow(0 0 4px currentColor); }
+  .neural { flex: 1; display: flex; flex-direction: column; }
+  #nm { width: 100%; flex: 1; min-height: 0; }
+  #nm rect { fill: rgba(8, 28, 56, .9); stroke: rgba(63, 214, 255, .5); stroke-width: 1.2; transition: all .25s; }
+  #nm text { fill: #9fd6ee; font: 600 9.5px var(--mono); text-anchor: middle; dominant-baseline: central; letter-spacing: .08em; }
+  #nm path { fill: none; stroke: rgba(63, 214, 255, .35); stroke-width: 1.4; }
+  #nm .lit rect { fill: rgba(63, 214, 255, .35); stroke: var(--cyan2); filter: drop-shadow(0 0 6px var(--cyan)); }
+  #nm .lit text { fill: #fff; }
+
+  /* chat */
+  .chat { flex: 1; display: flex; flex-direction: column; }
+  .tabs { display: flex; gap: 4px; margin-bottom: 8px; }
+  .tabs button { flex: 1; background: transparent; border: 1px solid var(--line); border-radius: 6px; padding: 5px 0; font-family: var(--mono); font-size: 11px; letter-spacing: .16em; color: var(--dim); }
+  .tabs button.on { color: #02121c; background: var(--cyan); border-color: var(--cyan); }
+  .log { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 2px; -webkit-overflow-scrolling: touch; }
+  .msg { max-width: 92%; padding: 8px 12px; border-radius: 10px; font-size: 14px; line-height: 1.5; word-wrap: break-word; overflow-wrap: anywhere; white-space: pre-wrap; }
+  .msg .who { display: block; font-family: var(--mono); font-size: 9.5px; letter-spacing: .14em; color: var(--dim); margin-bottom: 2px; }
+  .msg.ai { align-self: flex-start; background: rgba(10, 36, 70, .85); border: 1px solid rgba(63, 214, 255, .28); }
+  .msg.me { align-self: flex-end; background: #14477a; }
+  .msg.err { border-color: rgba(255, 77, 94, .6); color: #ffc2ca; }
+  .tool { align-self: flex-start; font-family: var(--mono); font-size: 11px; padding: 4px 10px; border-radius: 99px; border: 1px solid rgba(41, 255, 138, .45); color: var(--green); background: rgba(41, 255, 138, .07); }
+  .agent { align-self: stretch; font-size: 12.5px; line-height: 1.5; padding: 8px 10px; border-left: 3px solid var(--amber); background: rgba(255, 200, 87, .07); border-radius: 0 8px 8px 0; }
+  .agent small { color: var(--dim); display: block; font-family: var(--mono); font-size: 10px; margin-top: 2px; }
+  .inputrow { display: flex; gap: 6px; padding-top: 8px; }
+  .inputrow input { flex: 1; min-width: 0; height: 40px; border-radius: 10px; border: 1px solid var(--line); background: rgba(2, 12, 28, .8); color: var(--ink); padding: 0 12px; font: inherit; font-size: 14px; }
+  .ibtn { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); font-size: 16px; flex: none; }
+  .ibtn.mic.on { background: var(--green); color: #02140a; box-shadow: 0 0 14px var(--green); }
+
+  /* lab */
+  #vLab { grid-template-columns: 250px minmax(0, 1fr) 270px; }
+  .modes button { display: block; width: 100%; text-align: left; padding: 8px 10px; margin-bottom: 6px; border: 1px solid var(--line); border-radius: 6px; background: rgba(8, 28, 56, .6); font-family: var(--mono); font-size: 11.5px; letter-spacing: .1em; color: var(--ink); }
+  .modes button small { display: block; color: var(--dim); font-size: 9.5px; letter-spacing: .06em; margin-top: 2px; }
+  .modes button.on { border-color: var(--cyan2); background: rgba(63, 214, 255, .2); box-shadow: 0 0 12px rgba(63, 214, 255, .35); }
+  .ctl { margin-bottom: 9px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; color: var(--dim); }
+  .ctl label { display: flex; justify-content: space-between; margin-bottom: 3px; }
+  .ctl input[type=range] { width: 100%; accent-color: var(--cyan); }
+  .tog { display: flex; align-items: center; gap: 8px; font-size: 12px; margin: 6px 0; color: var(--ink); }
+  .tog input { accent-color: var(--cyan); width: 16px; height: 16px; }
+  .wide { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: rgba(8, 28, 56, .7); font-size: 12.5px; margin-top: 6px; }
+  .wide.on { background: var(--green); color: #02140a; border-color: var(--green); font-weight: 700; }
+  .handnote { font-size: 11.5px; color: var(--dim); line-height: 1.45; margin-top: 6px; }
+  .labcenter { position: relative; min-height: 0; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: radial-gradient(ellipse at 50% 60%, rgba(10, 60, 110, .45), rgba(2, 8, 20, .9) 70%); }
+  .labtitle { position: absolute; top: 10px; left: 0; right: 0; text-align: center; pointer-events: none; z-index: 2; }
+  .labtitle b { font-family: var(--mono); letter-spacing: .3em; font-size: 14px; color: #fff; text-shadow: 0 0 12px var(--cyan); }
+  .labtitle small { display: block; font-family: var(--mono); font-size: 10px; letter-spacing: .2em; color: var(--dim); margin-top: 2px; }
+  #robot { flex: 1; min-height: 0; width: 100%; display: block; cursor: grab; touch-action: none; }
+  #robot:active { cursor: grabbing; }
+  .rhint { position: absolute; bottom: 52px; left: 0; right: 0; text-align: center; font-family: var(--mono); font-size: 10px; letter-spacing: .25em; color: var(--dim); pointer-events: none; }
+  #labSay { position: absolute; left: 10px; right: 10px; bottom: 54px; text-align: center; font-size: 13px; color: var(--cyan2); text-shadow: 0 0 8px #000; pointer-events: none; min-height: 18px; }
+  .labbar { display: flex; gap: 6px; padding: 8px; border-top: 1px solid var(--line); background: rgba(2, 10, 24, .75); }
+  .labbar input { flex: 1; min-width: 0; height: 36px; border-radius: 18px; border: 1px solid var(--line); background: rgba(2, 12, 28, .8); color: var(--ink); padding: 0 14px; font: inherit; font-size: 13px; }
+  .handbox { position: absolute; right: 8px; top: 50px; width: 150px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #000; z-index: 3; }
+  .handbox video, .handbox canvas { display: block; width: 100%; height: auto; transform: scaleX(-1); }
+  .handbox canvas { position: absolute; inset: 0; }
+  .handbox .cap { position: absolute; left: 0; right: 0; bottom: 0; font: 600 9px var(--mono); padding: 2px 5px; background: rgba(0, 0, 0, .65); color: var(--green); transform: none; }
+  .vhand { position: absolute; left: 10px; bottom: 100px; width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--green); box-shadow: 0 0 14px var(--green); pointer-events: none; z-index: 3; display: none; }
+  .big { font-family: var(--mono); font-size: 38px; font-weight: 700; color: #fff; text-shadow: 0 0 14px var(--cyan); line-height: 1; }
+  .big small { font-size: 16px; color: var(--cyan2); }
+  .okbar { display: inline-block; background: linear-gradient(90deg, #ff4d5e, #ff8a5c); color: #1a0508; font: 700 10px var(--mono); letter-spacing: .15em; padding: 3px 8px; border-radius: 3px; margin-bottom: 6px; }
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 8px; }
+  .tile { border: 1px solid rgba(63, 214, 255, .3); border-radius: 5px; padding: 4px 2px; text-align: center; font-family: var(--mono); background: rgba(8, 28, 56, .6); }
+  .tile b { display: block; font-size: 12px; color: #fff; font-variant-numeric: tabular-nums; }
+  .tile small { font-size: 8px; color: var(--dim); letter-spacing: .08em; }
+  .tile.hot { border-color: var(--red); background: rgba(255, 77, 94, .2); }
+  .comp { font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; }
+  .comp div { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid rgba(63, 214, 255, .12); color: #bfe6f7; }
+  .comp b { color: var(--cyan2); font-variant-numeric: tabular-nums; font-weight: 600; }
+
+  /* modal */
+  #modal { position: fixed; inset: 0; z-index: 50; background: rgba(0, 4, 12, .72); display: flex; align-items: center; justify-content: center; padding: 14px; }
+  .mbox { width: min(520px, 100%); max-height: 88vh; overflow: auto; border: 1px solid var(--cyan); border-radius: 12px; background: #06142a; padding: 16px; box-shadow: 0 0 40px rgba(63, 214, 255, .3); }
+  .mbox h2 { margin: 0 0 12px; font: 700 14px var(--mono); letter-spacing: .2em; color: var(--cyan2); display: flex; align-items: center; }
+  .mbox h2 button { margin-left: auto; background: transparent; border: 0; font-size: 18px; }
+  .mbox label { display: block; font-size: 12.5px; color: var(--dim); margin: 10px 0 4px; }
+  .mbox input[type=text], .mbox input[type=password], .mbox textarea, .mbox select { width: 100%; border-radius: 8px; border: 1px solid var(--line); background: rgba(2, 12, 28, .9); color: var(--ink); padding: 9px 11px; font: inherit; font-size: 14px; }
+  .mbox textarea { min-height: 130px; resize: vertical; }
+  .mbox .row { display: flex; gap: 8px; align-items: center; }
+  .mbox .row > input { flex: 1; }
+  .btn { border: 0; border-radius: 8px; padding: 9px 16px; font-weight: 700; background: linear-gradient(90deg, #1b8fd1, #3fd6ff); color: #02121c; }
+  .btn.ghost { background: transparent; border: 1px solid var(--line); color: var(--ink); font-weight: 500; }
+  .mbox p.note { font-size: 12px; color: var(--dim); line-height: 1.5; margin: 8px 0 0; }
+  .mbox ul { margin: 6px 0; padding-left: 18px; font-size: 13.5px; line-height: 1.6; }
+  .mbox .chk { display: flex; align-items: center; gap: 8px; margin: 10px 0; font-size: 13.5px; }
+  .mbox .chk input { width: 18px; height: 18px; accent-color: var(--cyan); }
+
+  .tabbar { display: none; }
+
+  /* ---- phone / small screens ---- */
+  @media (max-width: 999px) {
+    .view { display: block; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    #vCore .sec { display: none; height: 100%; }
+    body[data-tab="core"] #vCore .s-mid, body[data-tab="chat"] #vCore .s-right, body[data-tab="map"] #vCore .s-left { display: flex; }
+    body[data-tab="core"] #vCore .s-mid .neural { min-height: 190px; }
+    body[data-tab="map"] #vCore .s-left .mapbox { min-height: 260px; }
+    .tabbar { display: grid; grid-template-columns: repeat(4, 1fr); flex: none; border-top: 1px solid var(--line); background: rgba(3, 12, 28, .95);
+      padding-bottom: env(safe-area-inset-bottom, 0px); }
+    .tabbar button { background: transparent; border: 0; padding: 8px 0 7px; font-size: 11px; color: var(--dim); display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .tabbar button span { font-size: 18px; }
+    .tabbar button.on { color: var(--cyan2); text-shadow: 0 0 8px var(--cyan); }
+    .nav { display: none; }
+    .corebox { flex-direction: column; align-items: stretch; }
+    .nodes { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 8px; }
+    .node { width: calc(50% - 6px); max-width: 170px; padding: 8px 8px; font-size: 11px; }
+    #orb { width: min(86%, 300px); }
+    #vLab { display: none; }
+    body[data-tab="lab"] #vLab { display: flex; flex-direction: column; }
+    #vLab .labcenter { order: -1; flex: none; }
+    #vLab .labcol { flex: none; }
+    body[data-tab="lab"] #vCore { display: none; }
+    #vLab .labcenter { height: 62vh; min-height: 360px; margin-bottom: 10px; }
+    #vLab .panel { margin-bottom: 10px; }
+    .labcol { display: block; }
+    .handbox { width: 112px; top: 44px; }
+    .stat #clock { display: none; }
+  }
+  @media (min-width: 1000px) {
+    .labcol { display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow: auto; }
+    .labcol .panel { flex: none; }
+    #vLab .labcol:last-child .panel:last-child { flex: 1 0 auto; }
+    body[data-view="lab"] #vCore { display: none; }
+    body[data-view="core"] #vLab { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body data-tab="core" data-view="core">
+<div class="app">
+  <header class="top">
+    <div class="brand">J.A.R.V.I.S</div>
+    <nav class="nav">
+      <button class="on" data-view="core" type="button">CORE</button>
+      <button data-view="lab" type="button">LAB</button>
+    </nav>
+    <div class="stat">
+      <div id="timers"></div>
+      <span class="dot" id="netDot" title="इंटरनेट"></span>
+      <span id="clock">--:--</span>
+      <button class="iconbtn" id="installBtn" type="button" aria-label="ऐप की तरह इंस्टॉल करो" title="ऐप की तरह इंस्टॉल करो" hidden>📲</button>
+      <button class="iconbtn" id="wakeBtn" type="button" aria-pressed="false" aria-label="जार्विस बोलकर या ताली से जगाओ" title="जार्विस बोलकर या ताली से जगाओ">👂</button>
+      <button class="iconbtn" id="settingsBtn" type="button" aria-label="सेटिंग">⚙</button>
+    </div>
+  </header>
+
+  <!-- ================= CORE ================= -->
+  <main class="view" id="vCore">
+    <section class="sec s-left">
+      <div class="panel mapbox">
+        <h3 class="ptitle">SAT-LINK FEED <small>SATELLITE STREAM</small></h3>
+        <canvas id="map"></canvas>
+      </div>
+      <div class="panel news">
+        <h3 class="ptitle">TODAY HEADLINES <small>डेमो समाचार</small></h3>
+        <div class="h"><b>09:12</b>बाज़ार में तेज़ी, सेंसेक्स ने नई ऊँचाई छुई</div>
+        <div class="h"><b>08:40</b>मौसम विभाग: अगले 48 घंटे में कई राज्यों में बारिश की संभावना</div>
+        <div class="h"><b>08:05</b>नई AI तकनीक से रोबोटिक्स में बड़ा कदम</div>
+        <div class="h"><b>07:30</b>अंतरिक्ष एजेंसी ने नए सैटेलाइट की सफल लॉन्चिंग की घोषणा की</div>
+      </div>
+    </section>
+
+    <section class="sec s-mid">
+      <div class="panel corebox" id="corebox">
+        <svg id="links"></svg>
+        <div class="nodes" id="nodes">
+          <button class="node" style="--c:#3fd6ff" data-m="memory" type="button"><i>🧠</i>MEMORY</button>
+          <button class="node" style="--c:#29ff8a" data-m="skills" type="button"><i>⚡</i>SKILLS</button>
+          <button class="node" style="--c:#ff4d5e" data-m="directive" type="button"><i>🎯</i>DIRECTIVE</button>
+          <button class="node" style="--c:#e6f6ff" data-m="settings" type="button"><i>⚙</i>SETTINGS</button>
+        </div>
+        <div class="orbwrap" id="orbwrap">
+          <canvas id="orb"></canvas>
+          <div class="ostate" id="ostate">STANDBY</div>
+          <button class="term" id="termBtn" type="button">TERMINATE</button>
+        </div>
+      </div>
+      <div class="panel neural">
+        <h3 class="ptitle">NEURAL MAP <small id="nmState">IDLE</small></h3>
+        <svg id="nm" viewBox="0 0 420 120" preserveAspectRatio="xMidYMid meet">
+          <path d="M70 60 H105 M175 60 H205 M205 60 V32 H235 M205 60 V88 H235 M305 32 H330 V60 H350 M305 88 H330 V60"/>
+          <g id="n-in"><rect x="12" y="44" width="58" height="32" rx="5"/><text x="41" y="60">INPUT</text></g>
+          <g id="n-intent"><rect x="105" y="44" width="70" height="32" rx="5"/><text x="140" y="60">INTENT</text></g>
+          <g id="n-tool"><rect x="235" y="16" width="70" height="32" rx="5"/><text x="270" y="32">LOCAL TOOL</text></g>
+          <g id="n-ai"><rect x="235" y="72" width="70" height="32" rx="5"/><text x="270" y="88">GEMINI AI</text></g>
+          <g id="n-out"><rect x="350" y="44" width="58" height="32" rx="5"/><text x="379" y="60">OUTPUT</text></g>
+        </svg>
+      </div>
+    </section>
+
+    <section class="sec s-right">
+      <div class="panel chat">
+        <div class="tabs" id="ctabs">
+          <button class="on" data-c="voice" type="button">VOICE</button>
+          <button data-c="agent" type="button">AGENT</button>
+          <button data-c="notes" type="button">NOTES</button>
+        </div>
+        <div class="log" id="log"></div>
+        <div class="log" id="agentLog" hidden></div>
+        <div class="log" id="notesLog" hidden></div>
+        <form class="inputrow" id="form" autocomplete="off">
+          <input id="text" type="text" placeholder="Jarvis से बात करो…" aria-label="संदेश">
+          <button class="ibtn mic" id="micBtn" type="button" aria-label="बोलो">🎤</button>
+          <button class="ibtn" id="eyeBtn" type="button" aria-label="कैमरे से दिखाओ" title="कैमरा जो देख रहा है उसके बारे में पूछो">👁</button>
+          <button class="ibtn" type="submit" aria-label="भेजो">➤</button>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <!-- ================= LAB ================= -->
+  <main class="view" id="vLab">
+    <section class="labcol">
+      <div class="panel">
+        <h3 class="ptitle">PROJECT MODES</h3>
+        <div class="modes" id="modes">
+          <button class="on" data-mode="holo" type="button">HUMANOID FRAME<small>होलोग्राम वायरफ्रेम</small></button>
+          <button data-mode="armor" type="button">ARMOR SUIT<small>ठोस कवच</small></button>
+          <button data-mode="xray" type="button">X-RAY SCAN<small>अंदर का ढाँचा</small></button>
+          <button data-mode="points" type="button">POINT CLOUD<small>बिंदुओं का जाल</small></button>
+        </div>
+      </div>
+      <div class="panel">
+        <h3 class="ptitle">PROJECTION CONTROLS</h3>
+        <div class="ctl"><label>ROTATION SPEED <b id="vSpeed">0.4</b></label><input id="sSpeed" type="range" min="0" max="2" step="0.05" value="0.4"></div>
+        <div class="ctl"><label>GLOW <b id="vGlow">1.0</b></label><input id="sGlow" type="range" min="0.3" max="2" step="0.05" value="1"></div>
+        <div class="ctl"><label>SCALE <b id="vScale">1.0</b></label><input id="sScale" type="range" min="0.6" max="1.6" step="0.05" value="1"></div>
+        <label class="tog"><input id="tLabels" type="checkbox" checked>LABELS दिखाओ</label>
+        <label class="tog"><input id="tPlat" type="checkbox" checked>PLATFORM दिखाओ</label>
+        <button class="wide" id="explodeBtn" type="button">💥 ढाँचा खोलो / जोड़ो</button>
+        <button class="wide" id="waveBtn" type="button">👋 रोबोट हाथ हिलाए</button>
+      </div>
+      <div class="panel">
+        <h3 class="ptitle">HAND CONTROL <small id="handState">OFF</small></h3>
+        <button class="wide" id="handBtn" type="button">📷 कैमरे से हाथ कंट्रोल</button>
+        <button class="wide" id="demoHandBtn" type="button">🎭 डेमो हाथ (बिना कैमरे)</button>
+        <div class="handnote">हाथ बाएँ-दाएँ = रोबोट घूमेगा · अँगूठा-उँगली पास/दूर = छोटा/बड़ा · खुली हथेली = ढाँचा खुलेगा · मुट्ठी = जुड़ेगा</div>
+      </div>
+    </section>
+
+    <section class="labcenter" id="labcenter">
+      <div class="labtitle"><b id="labName">HUMANOID FRAME</b><small id="labSub">FULL-BODY PROJECTION · DRAG TO ROTATE</small></div>
+      <canvas id="robot"></canvas>
+      <div class="handbox" id="handbox" hidden><video id="cam" playsinline muted></video><canvas id="camov"></canvas><div class="cap" id="camcap">CAMERA</div></div>
+      <div class="vhand" id="vhand"></div>
+      <div id="labSay"></div>
+      <div class="rhint">DRAG TO ROTATE · SCROLL TO ZOOM</div>
+      <form class="labbar" id="labform" autocomplete="off">
+        <input id="labText" type="text" placeholder="कमांड लिखो या 🎤 दबाओ, जैसे: armor mode" aria-label="कमांड">
+        <button class="ibtn mic" id="labMic" type="button" aria-label="बोलो">🎤</button>
+      </form>
+    </section>
+
+    <section class="labcol">
+      <div class="panel">
+        <h3 class="ptitle">STRUCTURAL ANALYSIS</h3>
+        <span class="okbar">INTEGRITY · OPTIMAL</span>
+        <div class="big"><span id="integ">97.4</span><small> %</small></div>
+        <div class="tiles" id="tiles"></div>
+      </div>
+      <div class="panel" style="flex:1">
+        <h3 class="ptitle">COMPONENT LIST <small>8 PARTS</small></h3>
+        <div class="comp" id="comp"></div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabbar" id="tabbar">
+    <button class="on" data-tab="core" type="button"><span>🔵</span>कोर</button>
+    <button data-tab="chat" type="button"><span>💬</span>चैट</button>
+    <button data-tab="map" type="button"><span>🛰</span>नक्शा</button>
+    <button data-tab="lab" type="button"><span>🤖</span>लैब</button>
+  </nav>
+</div>
+
+<div id="modal" hidden><div class="mbox" id="mbox"></div></div>
+
+<script id="jarvis-js">
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var TAU = Math.PI * 2;
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+  /* =====================================================
+     settings (phone / PC me yaad rahti hain)
+  ===================================================== */
+  var DIRECTIVE = 'तुम JARVIS हो, Boss के पर्सनल AI असिस्टेंट। जवाब छोटा रखो (ज़्यादा से ज़्यादा 3 वाक्य), क्योंकि उसे बोलकर सुनाया जाएगा। ' +
+    'जिस भाषा में Boss बोले (हिंदी, हिंग्लिश या अंग्रेज़ी) उसी में जवाब दो, हिंदी देवनागरी में लिखो। Boss को "Boss" कहकर बुलाओ। ' +
+    'मार्कडाउन, सूची, तारे या इमोजी मत लगाओ। तुम्हारे पास इंटरनेट या ताज़ा खबरें नहीं हैं, तो साफ़ बताओ।';
+  var cfg = { key: '', model: '', lang: 'hi-IN', speak: true, live: false, wake: 'off', wakeMode: 'voice', directive: DIRECTIVE };
+  try { var sv = JSON.parse(localStorage.getItem('jarvis_hud_cfg') || 'null'); if (sv) for (var k in sv) cfg[k] = sv[k]; } catch (e) {}
+  function saveCfg() { try { localStorage.setItem('jarvis_hud_cfg', JSON.stringify(cfg)); } catch (e) {} }
+  function getNotes() { try { return JSON.parse(localStorage.getItem('jarvis_hud_notes') || '[]'); } catch (e) { return []; } }
+  function setNotes(a) { try { localStorage.setItem('jarvis_hud_notes', JSON.stringify(a)); } catch (e) {} renderNotes(); }
+
+  var state = 'idle', busy = false, history = [], sample = null, rec = null, timers = [], tickId = 0;
+  var STATE_TXT = { idle: 'STANDBY', listening: 'LISTENING', thinking: 'PROCESSING', speaking: 'SPEAKING' };
+  function setState(s) {
+    state = s; $('ostate').textContent = STATE_TXT[s];
+    $('micBtn').classList.toggle('on', s === 'listening'); $('labMic').classList.toggle('on', s === 'listening');
+  }
+
+  /* =====================================================
+     navigation (CORE / LAB / mobile tabs)
+  ===================================================== */
+  function setTab(t) {
+    document.body.setAttribute('data-tab', t);
+    document.body.setAttribute('data-view', t === 'lab' ? 'lab' : 'core');
+    Array.prototype.forEach.call(document.querySelectorAll('#tabbar button'), function (b) { b.classList.toggle('on', b.getAttribute('data-tab') === t); });
+    Array.prototype.forEach.call(document.querySelectorAll('.nav button'), function (b) { b.classList.toggle('on', b.getAttribute('data-view') === (t === 'lab' ? 'lab' : 'core')); });
+    setTimeout(function () { resizeAll(); }, 30);
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('#tabbar button'), function (b) { b.addEventListener('click', function () { setTab(b.getAttribute('data-tab')); }); });
+  Array.prototype.forEach.call(document.querySelectorAll('.nav button'), function (b) { b.addEventListener('click', function () { setTab(b.getAttribute('data-view') === 'lab' ? 'lab' : 'core'); }); });
+
+  /* =====================================================
+     chat log
+  ===================================================== */
+  function addChat(who, text, cls) {
+    var d = document.createElement('div');
+    d.className = 'msg ' + who + (cls ? ' ' + cls : '');
+    d.innerHTML = '<span class="who">' + (who === 'me' ? 'YOU' : 'JARVIS') + '</span>' + esc(text);
+    $('log').appendChild(d); $('log').scrollTop = $('log').scrollHeight;
+    return d;
+  }
+  function addTool(name, ms) {
+    var d = document.createElement('div'); d.className = 'tool'; d.textContent = '⚙ Module: ' + name + '  ' + ms + 's';
+    $('log').appendChild(d); $('log').scrollTop = $('log').scrollHeight;
+  }
+  function addAgent(text, sub) {
+    var d = document.createElement('div'); d.className = 'agent'; d.innerHTML = esc(text) + '<small>' + esc(sub || '') + '</small>';
+    $('agentLog').appendChild(d); $('agentLog').scrollTop = $('agentLog').scrollHeight;
+  }
+  function renderNotes() {
+    var box = $('notesLog'), ns = getNotes(); box.innerHTML = '';
+    if (!ns.length) { box.innerHTML = '<div class="agent">अभी कोई नोट नहीं। बोलो: "याद रखो कल दूध लाना है"<small>NOTES</small></div>'; return; }
+    ns.forEach(function (n, i) { var d = document.createElement('div'); d.className = 'agent'; d.innerHTML = (i + 1) + '. ' + esc(n); box.appendChild(d); });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('#ctabs button'), function (b) {
+    b.addEventListener('click', function () {
+      var c = b.getAttribute('data-c');
+      Array.prototype.forEach.call(document.querySelectorAll('#ctabs button'), function (x) { x.classList.toggle('on', x === b); });
+      $('log').hidden = c !== 'voice'; $('agentLog').hidden = c !== 'agent'; $('notesLog').hidden = c !== 'notes';
+    });
+  });
+  function labSay(t) { $('labSay').textContent = t; clearTimeout(labSay.t); labSay.t = setTimeout(function () { $('labSay').textContent = ''; }, 9000); }
+
+  /* =====================================================
+     neural map
+  ===================================================== */
+  function nm(id, on) { var g = $('n-' + id); if (g) g.classList.toggle('lit', on !== false); }
+  function nmClear() { ['in', 'intent', 'tool', 'ai', 'out'].forEach(function (i) { nm(i, false); }); $('nmState').textContent = 'IDLE'; }
+
+  /* =====================================================
+     awaaz: bolna aur sunna
+  ===================================================== */
+  function speak(text) {
+    return new Promise(function (resolve) {
+      if (!cfg.speak || !window.speechSynthesis) { resolve(); return; }
+      var t = String(text).replace(/https?:\/\/\S+/g, '').replace(/[*_#`>~]/g, '').trim();
+      if (!t) { resolve(); return; }
+      try { speechSynthesis.cancel(); } catch (e) {}
+      var u = new SpeechSynthesisUtterance(t);
+      u.lang = /[\u0900-\u097F]/.test(t) ? 'hi-IN' : 'en-IN'; u.pitch = 0.9;
+      var vs = speechSynthesis.getVoices();
+      for (var i = 0; i < vs.length; i++) if (vs[i].lang === u.lang) { u.voice = vs[i]; break; }
+      var done = false;
+      function fin() { if (done) return; done = true; if (state === 'speaking') setState('idle'); resolve(); }
+      u.onstart = function () { setState('speaking'); }; u.onend = fin; u.onerror = fin;
+      speechSynthesis.speak(u);
+      setTimeout(fin, Math.max(4000, t.length * 130));
+    });
+  }
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  function listen() {
+    if (busy) return;
+    stopWakeEngines();
+    if (!SR) { reply('इस ब्राउज़र में आवाज़ सुनना नहीं चलता, Boss। Chrome में खोलो, या लिखकर पूछो।', 'err'); return; }
+    try { speechSynthesis.cancel(); } catch (e) {}
+    try { if (rec) rec.abort(); } catch (e) {}
+    rec = new SR(); rec.lang = cfg.lang; rec.interimResults = true; rec.continuous = false;
+    var finalText = '', got = false;
+    rec.onstart = function () { setState('listening'); };
+    rec.onresult = function (e) {
+      var t = '';
+      for (var i = e.resultIndex; i < e.results.length; i++) { t += e.results[i][0].transcript; if (e.results[i].isFinal) finalText += e.results[i][0].transcript; }
+      got = true; $('text').value = finalText || t; $('labText').value = finalText || t;
+    };
+    rec.onerror = function (e) {
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { reply('माइक की अनुमति नहीं मिली, Boss। ब्राउज़र में माइक की अनुमति दो।', 'err'); cfg.live = false; }
+      if (state === 'listening') setState('idle');
+    };
+    rec.onend = function () {
+      if (state === 'listening') setState('idle');
+      var t = (finalText || $('text').value || '').trim();
+      if (got && t) { $('text').value = ''; $('labText').value = ''; submit(t); }
+      else if (cfg.live && !busy) setTimeout(function () { if (cfg.live && !busy && state === 'idle') listen(); }, 500);
+      else resumeWake();
+    };
+    try { rec.start(); } catch (e) {}
+  }
+  function stopListen() { try { if (rec) rec.stop(); } catch (e) {} }
+  $('micBtn').addEventListener('click', function () { state === 'listening' ? stopListen() : listen(); });
+  $('labMic').addEventListener('click', function () { state === 'listening' ? stopListen() : listen(); });
+  // SPACE dabake rakho = bolo (jaise video me)
+  var spaceDown = false;
+  window.addEventListener('keydown', function (e) {
+    if (e.code === 'Space' && !spaceDown && !/INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || '') && $('modal').hidden) { e.preventDefault(); spaceDown = true; listen(); }
+  });
+  window.addEventListener('keyup', function (e) { if (e.code === 'Space' && spaceDown) { spaceDown = false; stopListen(); } });
+  $('termBtn').addEventListener('click', function () {
+    try { speechSynthesis.cancel(); } catch (e) {} stopListen(); cfg.live = false; busy = false; history = []; setState('idle'); nmClear();
+    addChat('ai', 'सब रोक दिया, Boss। बातचीत साफ़ कर दी।');
+  });
+
+  /* =====================================================
+     commands samajhna
+  ===================================================== */
+  var HI_NUM = { 'एक': 1, 'दो': 2, 'तीन': 3, 'चार': 4, 'पाँच': 5, 'पांच': 5, 'छह': 6, 'सात': 7, 'आठ': 8, 'नौ': 9, 'दस': 10, 'पंद्रह': 15, 'बीस': 20, 'तीस': 30, 'डेढ़': 1.5, 'आधा': 0.5,
+    'one': 1, 'two': 2, 'three': 3, 'five': 5, 'ten': 10 };
+  function normDigits(s) { return s.replace(/[०-९]/g, function (d) { return '०१२३४५६७८९'.indexOf(d); }); }
+  var SITES = {
+    youtube: ['YouTube', 'https://www.youtube.com', 'https://www.youtube.com/results?search_query='],
+    google: ['Google', 'https://www.google.com', 'https://www.google.com/search?q='],
+    maps: ['Maps', 'https://www.google.com/maps', 'https://www.google.com/maps/search/'],
+    whatsapp: ['WhatsApp', 'https://web.whatsapp.com'], gmail: ['Gmail', 'https://mail.google.com']
+  };
+  var SITE_RE = [[/youtube|यूट्यूब|यूटयूब/i, 'youtube'], [/google|गूगल|गुगल/i, 'google'], [/maps?\b|मैप्स|मैप/i, 'maps'], [/whatsapp|व्हाट्सएप|व्हाट्सऐप/i, 'whatsapp'], [/gmail|जीमेल/i, 'gmail']];
+  function findSite(t) { for (var i = 0; i < SITE_RE.length; i++) if (SITE_RE[i][0].test(t)) return SITE_RE[i][1]; return null; }
+  function stripSite(t) { var r = t; SITE_RE.forEach(function (p) { r = r.replace(new RegExp(p[0].source, 'ig'), ' '); }); return r.replace(/\s+/g, ' ').trim(); }
+
+  function parse(raw) {
+    var t = normDigits(raw.toLowerCase().trim()).replace(/[?!।,]+/g, ' ').replace(/\s+/g, ' ').trim();
+    t = t.replace(/^(hey|हे|ए|ओके|ok)?\s*(जार्विस|जारविस|जार्विश|jarvis|ज़ार्विस)\s*/i, '').trim();
+    var words = t.split(' ').filter(Boolean).length, m;
+    if (!t) return null;
+    var robotWord = /रोबोट|robot|ढाँचा|ढांचा|hologram|होलोग्राम/.test(t);
+
+    if (/^(चुप|रुको|रुक जाओ|बस|stop|quiet)$/.test(t)) return { type: 'stop' };
+    if (/(लैब|lab)/.test(t) && /(खोलो|दिखाओ|चलो|जाओ|open|show)/.test(t)) return { type: 'view', v: 'lab' };
+    if (/(कोर|core|होम|home)/.test(t) && /(खोलो|दिखाओ|चलो|जाओ|वापस|open|go)/.test(t)) return { type: 'view', v: 'core' };
+    if (/(आर्मर|armor|armour|कवच)/.test(t)) return { type: 'mode', v: 'armor' };
+    if (/(एक्स ?रे|x-?ray)/.test(t)) return { type: 'mode', v: 'xray' };
+    if (/(वायरफ्रेम|wireframe|होलो|holo)/.test(t)) return { type: 'mode', v: 'holo' };
+    if (/(पॉइंट|point cloud|points)/.test(t)) return { type: 'mode', v: 'points' };
+    if (robotWord || /(लैब|lab)/.test(t)) {
+      if (/(खोलो|अलग|बिखेर|explode|disassemble)/.test(t)) return { type: 'explode', v: 1 };
+      if (/(जोड़|असेंबल|assemble|वापस|समेट)/.test(t)) return { type: 'explode', v: 0 };
+      if (/(हाथ हिला|हाथ हिलाओ|wave|नमस्ते|hello|हेलो)/.test(t)) return { type: 'wave' };
+      if (/(घुमाओ|घूमो|rotate|spin)/.test(t)) return { type: 'spin', v: 1.2 };
+      if (/(रुक|stop|थम)/.test(t)) return { type: 'spin', v: 0 };
+    }
+    if (/(कैमरा|camera|हैंड|hand).*(चालू|शुरू|on|start)/.test(t)) return { type: 'hand' };
+    if (/(स्क्रीन|screen)/.test(t) && /(देखो|देख|बताओ|पढ़ो|क्या दिख|समझाओ|look|read|describe)/.test(t)) return { type: 'vision', src: 'screen', text: raw };
+    if (/(ये क्या है|यह क्या है|क्या दिख रहा|सामने क्या|कैमरे में क्या|what is this|what do you see|look at this|identify)/.test(t) || (words <= 5 && /(देखो|देखकर बताओ|देख कर बताओ)/.test(t) && !findSite(t) && !/लैब|रोबोट|robot|lab/.test(t))) return { type: 'vision', src: 'camera', text: raw };
+
+    if (/टाइमर|timer|काउंटडाउन/.test(t)) {
+      var re = /(\d+(?:\.\d+)?|[a-z\u0900-\u097F]+)\s*(सेकंड|सेकण्ड|second|sec|मिनट|मिनिट|minute|min|घंटा|घंटे|hour|hr)/g, total = 0, ok = false;
+      while ((m = re.exec(t))) {
+        var n = isNaN(+m[1]) ? HI_NUM[m[1]] : +m[1]; if (n === undefined) continue;
+        total += n * (/सेक|sec/.test(m[2]) ? 1 : /मिन|min/.test(m[2]) ? 60 : 3600); ok = true;
+      }
+      return ok && total > 0 ? { type: 'timer', sec: Math.round(total) } : { type: 'say', text: 'कितने समय का टाइमर, Boss? जैसे "टाइमर 5 मिनट"।' };
+    }
+    if (/(नोट्स|नोट्|notes?)\s*(दिखाओ|सुनाओ|बताओ|पढ़ो|show|list)|मेरे (नोट्स|नोट)/.test(t)) return { type: 'notes' };
+    if (/(नोट्स|नोट|notes?).*(मिटाओ|हटाओ|साफ़|साफ|clear|delete)/.test(t)) return { type: 'clearNotes' };
+    if ((m = t.match(/^(?:याद रखो|याद रख|नोट करो|नोट कर|note|remember)\s*(?:कि|that)?\s*(.+)$/))) return { type: 'note', text: m[1] };
+
+    if ((/(खोलो|खोल दो|खोलिए|open|चलाओ)/.test(t)) && findSite(t) && words <= 6) return { type: 'open', site: findSite(t) };
+    var site = findSite(t), q = null;
+    if (site && (m = t.match(/(?:पर|par|on|में|me|mein)\s+(.+)$/))) q = stripSite(m[1]);
+    if (!q && (m = t.match(/^(.+?)\s*(?:खोजो|ढूंढो|ढूँढो|सर्च करो|सर्च|search)$/))) q = stripSite(m[1]);
+    if (!q && (m = t.match(/^(?:search|खोजो|सर्च|ढूंढो)\s+(.+)$/))) q = stripSite(m[1]);
+    if (q && SITES[site || 'google'][2]) return { type: 'search', site: site || 'google', q: q };
+    if ((m = t.match(/^(?:गाना|गाने|song|play|बजाओ|चलाओ|सुनाओ)\s+(.+)$/))) {
+      var s = m[1].replace(/^(?:(?:गाना|गाने|song|बजाओ|चलाओ|सुनाओ|play)\s+)+/, '').replace(/\s+(?:on|पर)\s+(?:youtube|यूट्यूब)\s*$/, '').trim();
+      if (s && !/चुटकुला|कहानी|joke|story/.test(s)) return { type: 'search', site: 'youtube', q: s };
+    }
+
+    if (words <= 6 && /(समय|टाइम|time|कितने बजे|बजे हैं|बजे है)/.test(t) && !/प्रबंधन|management/.test(t)) return { type: 'time' };
+    if (words <= 7 && /(तारीख|तारिख|date|कौन सा दिन|कौनसा दिन|दिन क्या)/.test(t)) return { type: 'date' };
+    if (words <= 6 && /(बैटरी|battery)/.test(t)) return { type: 'battery' };
+    var mt = parseMath(t); if (mt !== null) return { type: 'math', value: mt };
+    if (/(कंप्यूटर|कम्प्यूटर|लैपटॉप|computer|laptop|pc)\s*(पर|में|को|से)?.*(खोलो|चलाओ|बंद|ओपन|open|launch|close|task|काम)/.test(t)) return { type: 'agent', text: raw };
+    if (words <= 3 && /^(नमस्ते|नमस्कार|हेलो|हैलो|hello|hi|hey|प्रणाम)/.test(t)) return { type: 'greet' };
+    return null;
+  }
+  function parseMath(t) {
+    var e = t.replace(/कितना होगा|कितने होंगे|क्या होगा|बराबर|equals?|calculate|हिसाब|कितना/g, ' ').replace(/जोड़ो|जोड़|प्लस|plus/g, '+')
+      .replace(/घटाओ|घटा|माइनस|minus/g, '-').replace(/गुणा|गुना|into|times|×/g, '*').replace(/भाग|divided by|divide|÷/g, '/')
+      .replace(/[^0-9+\-*/(). ]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!/\d/.test(e) || !/[+\-*/]/.test(e.replace(/^-/, ''))) return null;
+    if (!/^[0-9+\-*/(). ]+$/.test(e) || /[+\-*/]\s*$/.test(e) || (e.match(/\d+(\.\d+)?/g) || []).length < 2) return null;
+    try { var v = Function('"use strict"; return (' + e + ');')(); if (typeof v === 'number' && isFinite(v)) return Math.round(v * 1e6) / 1e6; } catch (err) {}
+    return null;
+  }
+  function timeText() {
+    var d = new Date(), h = d.getHours(), mi = d.getMinutes(), h12 = h % 12 || 12;
+    var per = h >= 5 && h < 12 ? 'सुबह' : h >= 12 && h < 16 ? 'दोपहर' : h >= 16 && h < 19 ? 'शाम' : 'रात';
+    return mi === 0 ? 'अभी ' + per + ' के ठीक ' + h12 + ' बजे हैं, Boss।' : 'अभी ' + per + ' के ' + h12 + ' बजकर ' + mi + ' मिनट हुए हैं, Boss।';
+  }
+  function fmtDur(sec) { var h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = Math.floor(sec % 60); function p(n) { return (n < 10 ? '0' : '') + n; } return (h ? h + ':' : '') + p(m) + ':' + p(s); }
+  function speakDur(sec) { var h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = Math.round(sec % 60), o = []; if (h) o.push(h + ' घंटे'); if (m) o.push(m + ' मिनट'); if (s) o.push(s + ' सेकंड'); return o.join(' '); }
+  function beepAlarm() {
+    try { var ac = new (window.AudioContext || window.webkitAudioContext)();
+      [0, 0.35, 0.7].forEach(function (d) { var o = ac.createOscillator(), g = ac.createGain(); o.type = 'sine'; o.frequency.value = 880; g.gain.setValueAtTime(0.18, ac.currentTime + d);
+        g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + d + 0.3); o.connect(g); g.connect(ac.destination); o.start(ac.currentTime + d); o.stop(ac.currentTime + d + 0.32); });
+    } catch (e) {}
+  }
+  function renderTimers() {
+    var box = $('timers'); box.innerHTML = ''; var now = Date.now();
+    timers.forEach(function (t) { var c = document.createElement('span'); c.className = 'tchip'; c.textContent = '⏲ ' + fmtDur(Math.max(0, Math.round((t.end - now) / 1000))); box.appendChild(c); });
+  }
+  function tick() {
+    var now = Date.now();
+    timers = timers.filter(function (t) {
+      if (t.end <= now) { beepAlarm(); var msg = 'Boss, ' + speakDur(t.sec) + ' का टाइमर पूरा हो गया!'; addChat('ai', '⏰ ' + msg); speak(msg); return false; }
+      return true;
+    });
+    renderTimers(); if (!timers.length) { clearInterval(tickId); tickId = 0; }
+  }
+
+  /* command chalana: {text, tool} lautata hai */
+  function run(cmd) {
+    switch (cmd.type) {
+      case 'stop': try { speechSynthesis.cancel(); } catch (e) {} return { text: '', tool: 'stop' };
+      case 'say': return { text: cmd.text, tool: 'help' };
+      case 'view': setTab(cmd.v); return { text: cmd.v === 'lab' ? 'LAB खोल दी, Boss। रोबोट होलोग्राम तैयार है।' : 'CORE पर आ गया, Boss।', tool: 'navigator' };
+      case 'mode': setMode(cmd.v); setTab('lab'); return { text: MODE_NAMES[cmd.v] + ' चालू कर दिया, Boss।', tool: 'robot_mode' };
+      case 'explode': R.targetExplode = cmd.v; setTab('lab'); return { text: cmd.v ? 'रोबोट का ढाँचा खोल दिया, Boss।' : 'सारे पुर्ज़े जोड़ दिए, Boss।', tool: 'robot_explode' };
+      case 'wave': R.waveT = 3.2; setTab('lab'); return { text: 'रोबोट आपको नमस्ते कर रहा है, Boss।', tool: 'robot_wave' };
+      case 'spin': R.speed = cmd.v; $('sSpeed').value = cmd.v; $('vSpeed').textContent = cmd.v.toFixed(1); return { text: cmd.v ? 'रोबोट घूम रहा है, Boss।' : 'रोबोट रोक दिया, Boss।', tool: 'robot_spin' };
+      case 'hand': setTab('lab'); startHand(); return { text: 'कैमरा चालू कर रहा हूँ, Boss। अपना हाथ कैमरे के सामने लाओ।', tool: 'hand_control' };
+      case 'time': return { text: timeText(), tool: 'clock' };
+      case 'date': return { text: 'आज ' + new Date().toLocaleDateString('hi-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + ' है, Boss।', tool: 'calendar' };
+      case 'timer':
+        timers.push({ end: Date.now() + cmd.sec * 1000, sec: cmd.sec }); if (!tickId) tickId = setInterval(tick, 500); renderTimers();
+        return { text: speakDur(cmd.sec) + ' का टाइमर शुरू कर दिया, Boss।', tool: 'timer_tool' };
+      case 'note': var ns = getNotes(); ns.push(cmd.text); setNotes(ns); return { text: 'याद रख लिया, Boss: ' + cmd.text, tool: 'memory_write' };
+      case 'notes': var all = getNotes(); return { text: all.length ? 'आपके नोट्स: ' + all.map(function (n, i) { return (i + 1) + '. ' + n; }).join('। ') : 'अभी कोई नोट नहीं है, Boss।', tool: 'memory_read' };
+      case 'clearNotes': setNotes([]); return { text: 'सारे नोट्स मिटा दिए, Boss।', tool: 'memory_clear' };
+      case 'math': return { text: 'जवाब है ' + cmd.value + ', Boss।', tool: 'calculator' };
+      case 'greet': return { text: 'नमस्ते Boss! JARVIS तैयार है। बताइए, क्या करूँ?', tool: 'greeting' };
+      case 'open': var S = SITES[cmd.site]; openUrl(S[1]); return { text: S[0] + ' खोल रहा हूँ, Boss।', tool: 'browser_open' };
+      case 'search': var SS = SITES[cmd.site]; openUrl(SS[2] + encodeURIComponent(cmd.q)); return { text: SS[0] + ' पर "' + cmd.q + '" खोज रहा हूँ।', tool: 'web_search' };
+      case 'agent':
+        addAgent('Alice Agent को काम दे दिया: ' + cmd.text, 'डेमो: वेब पेज असली कंप्यूटर नहीं चला सकता');
+        return { text: 'Alice एजेंट को काम दे दिया, Boss। (ये सिर्फ़ दिखावा है, वेब पेज से PC की फाइलें या ऐप नहीं चल सकते।)', tool: 'agent_team_assign_task' };
+      case 'battery': return { text: 'बैटरी की जानकारी अभी सिर्फ़ फ़ोन ऐप में मिलती है, Boss।', tool: 'battery' };
+    }
+    return { text: '', tool: 'none' };
+  }
+  function openUrl(u) { try { window.open(u, '_blank', 'noopener'); } catch (e) {} }
+
+  /* =====================================================
+     AI se baat: Gemini (apni API key) ya Claude (demo)
+  ===================================================== */
+  var geminiModelResolved = '';
+  function gErr(r, body) {
+    var msg = (body && body.error && body.error.message) || '';
+    if (r.status === 400 && /API key/i.test(msg)) return 'API Key सही नहीं है, Boss। ⚙ SETTINGS में दोबारा पेस्ट करो।';
+    if (r.status === 403) return 'इस API Key को अनुमति नहीं मिली, Boss। Google AI Studio में Key और उसका प्रोजेक्ट जाँच लो।';
+    if (r.status === 429) return 'Gemini की सीमा (quota) पूरी हो गई, Boss। थोड़ी देर बाद फिर कोशिश करो।';
+    return 'Gemini से जवाब नहीं आया (कोड ' + r.status + '). ' + msg.slice(0, 120);
+  }
+  async function pickModel() {
+    var r = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=100', { headers: { 'x-goog-api-key': cfg.key } });
+    var d = await r.json(), list = (d.models || []).filter(function (m) { return (m.supportedGenerationMethods || []).indexOf('generateContent') >= 0 && /gemini/.test(m.name); });
+    var best = list.filter(function (m) { return /flash/.test(m.name) && !/(image|tts|live|thinking|lite|preview|exp)/.test(m.name); })[0] || list.filter(function (m) { return /flash/.test(m.name); })[0] || list[0];
+    return best ? best.name.replace('models/', '') : '';
+  }
+  async function geminiCall(model, text, img) {
+    var contents = img ? [{ role: 'user', parts: [{ text: text }, { inlineData: { mimeType: 'image/jpeg', data: img } }] }]
+      : history.slice(-12).map(function (h) { return { role: h.role === 'user' ? 'user' : 'model', parts: [{ text: h.text }] }; });
+    var body = { systemInstruction: { parts: [{ text: cfg.directive || DIRECTIVE }] }, contents: contents, generationConfig: { maxOutputTokens: 2048, temperature: 0.7 } };
+    var r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent',
+      { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': cfg.key }, body: JSON.stringify(body) });
+    var d = {}; try { d = await r.json(); } catch (e) {}
+    return { r: r, d: d };
+  }
+  // model ka naam expire ho jaye (404) to agla naam aazmata hai: aapka naam -> gemini-flash-latest -> gemini-3.5-flash -> Google ki list se
+  async function askGemini(text, img) {
+    var chain = [];
+    [geminiModelResolved, cfg.model, 'gemini-flash-latest', 'gemini-3.5-flash'].forEach(function (m) { if (m && chain.indexOf(m) < 0) chain.push(m); });
+    for (var i = 0; i <= chain.length; i++) {
+      var model = chain[i];
+      if (model === undefined) { model = await pickModel(); if (!model || chain.indexOf(model) >= 0) break; }
+      var res = await geminiCall(model, text, img), msg = (res.d.error && res.d.error.message) || '';
+      if (res.r.status === 404 || (res.r.status === 400 && /not found|not supported|no longer available|deprecated/i.test(msg))) continue;
+      if (!res.r.ok) throw new Error(gErr(res.r, res.d));
+      var parts = (res.d.candidates && res.d.candidates[0] && res.d.candidates[0].content && res.d.candidates[0].content.parts) || [];
+      var out = parts.map(function (p) { return p.text || ''; }).join('').trim();
+      if (!out) throw new Error('Gemini ने खाली जवाब दिया, Boss। एक बार फिर पूछो।');
+      geminiModelResolved = model; return out;
+    }
+    throw new Error('Gemini का कोई चालू model नहीं मिला, Boss। ⚙ SETTINGS में Model खाली छोड़कर फिर कोशिश करो, या aistudio.google.com पर देखो कौन-सा model चालू है।');
+  }
+  async function askAI(text) {
+    if (cfg.key) {
+      try { return await askGemini(text); }
+      catch (e) { var m = (e && e.message) || ''; if (e instanceof TypeError || /Failed to fetch|NetworkError/i.test(m)) return { err: 'Gemini तक पहुँच नहीं पा रहा, Boss। इंटरनेट देखो, या ये फ़ाइल सीधे ब्राउज़र में खोलो (किसी ऐप के अंदर नहीं)।' }; return { err: m }; }
+    }
+    if (sample) {
+      try {
+        var recent = history.slice(-12).map(function (h) { return (h.role === 'user' ? 'Boss: ' : 'JARVIS: ') + h.text; }).join('\n');
+        var res = await sample((cfg.directive || DIRECTIVE) + '\n\nबातचीत:\n' + recent + '\nJARVIS:', { cache: false, modelTier: 'quick' });
+        return (res && res.text || '').trim() || { err: 'जवाब नहीं बन पाया, Boss।' };
+      } catch (e) { return { err: 'डेमो AI अभी जवाब नहीं दे पाया, Boss। ⚙ SETTINGS में अपनी Gemini API Key डालो।' }; }
+    }
+    return { err: 'AI से बात करने के लिए ⚙ SETTINGS में अपनी Gemini API Key पेस्ट करो, Boss। तब तक समय, टाइमर, नोट्स और रोबोट वाले कमांड चल रहे हैं।' };
+  }
+
+
+  /* =====================================================
+     jagna: "jarvis" bolo ya do baar taali bajao (app khula ho tab)
+  ===================================================== */
+  var WAKE_RE = /(हे\s*)?(जार्विस|जारविस|जार्विश|जरविस|ज़ार्विस|जारवीस|जार्विज|जर्विस|jarvis|jarvish)/i;
+  var wakeRec = null, wakeRun = false, clapStream = null, clapCtx = null, clapTimer = 0, wakeHits = 0;
+  function wakeBeep() {
+    try { var ac = new (window.AudioContext || window.webkitAudioContext)(), o = ac.createOscillator(), g = ac.createGain(); o.type = 'sine'; o.frequency.value = 1180;
+      g.gain.setValueAtTime(0.15, ac.currentTime); g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.14); o.connect(g); g.connect(ac.destination); o.start(); o.stop(ac.currentTime + 0.15); } catch (e) {}
+    buzzShort();
+  }
+  function buzzShort() { try { if (navigator.vibrate) navigator.vibrate(40); } catch (e) {} }
+  function syncWake() { $('wakeBtn').setAttribute('aria-pressed', String(cfg.wake === 'on')); saveCfg(); }
+  function activated(rest) {
+    wakeHits++; stopWakeEngines(); wakeBeep();
+    if (rest && rest.split(/\s+/).filter(Boolean).length >= 1) submit(rest); else listen();
+  }
+  function startWakeEngine() {
+    if (wakeRun || cfg.wake !== 'on') return; wakeRun = true;
+    if (cfg.wakeMode === 'clap') startClap(); else startVoiceWake();
+  }
+  function stopWakeEngines() {
+    wakeRun = false;
+    try { if (wakeRec) { wakeRec.onend = null; wakeRec.onresult = null; wakeRec.abort(); } } catch (e) {} wakeRec = null;
+    clearInterval(clapTimer); clapTimer = 0;
+    if (clapStream) { clapStream.getTracks().forEach(function (t) { t.stop(); }); clapStream = null; }
+    try { if (clapCtx) clapCtx.close(); } catch (e) {} clapCtx = null;
+  }
+  function resumeWake() {
+    if (cfg.wake !== 'on' || cfg.live) return;
+    setTimeout(function () { if (cfg.wake === 'on' && !cfg.live && !busy && state === 'idle' && !wakeRun) startWakeEngine(); }, 500);
+  }
+  function wakeFail(msg) { cfg.wake = 'off'; syncWake(); stopWakeEngines(); reply(msg, 'err'); }
+  function startVoiceWake() {
+    if (!SR) { wakeFail('इस ब्राउज़र में आवाज़ पहचान नहीं चलती, Boss। Android Chrome में खोलो, या ताली वाला तरीका चुनो।'); return; }
+    wakeRec = new SR(); wakeRec.lang = cfg.lang; wakeRec.continuous = true; wakeRec.interimResults = true;
+    wakeRec.onresult = function (e) {
+      for (var i = e.resultIndex; i < e.results.length; i++) {
+        if (!e.results[i].isFinal) continue;
+        var t = e.results[i][0].transcript, m = t.match(WAKE_RE);
+        if (m) { activated(t.slice(m.index + m[0].length).replace(/^[\s,।.!]+/, '')); return; }
+      }
+    };
+    wakeRec.onerror = function (ev) { if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') wakeFail('माइक की अनुमति नहीं मिली, Boss। अनुमति दो।'); };
+    wakeRec.onend = function () { if (wakeRun && cfg.wake === 'on' && !busy && state === 'idle') setTimeout(function () { if (wakeRun && wakeRec) { try { wakeRec.start(); } catch (e) {} } }, 300); };
+    try { wakeRec.start(); } catch (e) {}
+  }
+  async function startClap() {
+    try { clapStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }); }
+    catch (e) { wakeFail('माइक की अनुमति नहीं मिली, Boss। अनुमति दो।'); return; }
+    if (!wakeRun) { stopWakeEngines(); return; }
+    clapCtx = new (window.AudioContext || window.webkitAudioContext)();
+    try { if (clapCtx.state === 'suspended') await clapCtx.resume(); } catch (e) {}
+    var src = clapCtx.createMediaStreamSource(clapStream), an = clapCtx.createAnalyser(); an.fftSize = 1024; src.connect(an);
+    var buf = new Float32Array(an.fftSize), base = 0.02, claps = [], last = 0;
+    clapTimer = setInterval(function () {
+      an.getFloatTimeDomainData(buf);
+      var peak = 0, sum = 0, i; for (i = 0; i < buf.length; i++) { var a = Math.abs(buf[i]); if (a > peak) peak = a; sum += a * a; }
+      var rms = Math.sqrt(sum / buf.length), now = performance.now();
+      if (peak > Math.max(0.3, base * 8) && now - last > 110) {
+        last = now; claps = claps.filter(function (c) { return now - c < 900; }); claps.push(now);
+        if (claps.length >= 2) { claps = []; activated(''); return; }
+      }
+      base = base * 0.985 + Math.min(rms, 0.15) * 0.015;
+    }, 20);
+  }
+  $('wakeBtn').addEventListener('click', function () {
+    cfg.wake = cfg.wake === 'on' ? 'off' : 'on'; syncWake();
+    if (cfg.wake === 'on') {
+      addChat('ai', cfg.wakeMode === 'clap' ? 'जगाने वाला मोड चालू: अब दो बार ताली बजाओ, Boss। (ऐप खुला और स्क्रीन चालू रखो)' : 'जगाने वाला मोड चालू: अब बोलो "जार्विस", फिर अपना काम। (ऐप खुला और स्क्रीन चालू रखो)');
+      if (!busy && state === 'idle') startWakeEngine();
+    } else { stopWakeEngines(); addChat('ai', 'जगाने वाला मोड बंद कर दिया, Boss।'); }
+  });
+
+  /* =====================================================
+     dekhna: camera ya screen ki tasveer Gemini ko dikhana
+  ===================================================== */
+  async function captureFrame(src) {
+    var stream;
+    if (src === 'screen') {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) throw new Error('फ़ोन के ब्राउज़र में स्क्रीन शेयर नहीं चलता, Boss। ये लैपटॉप के Chrome में चलेगा। फ़ोन में 👁 से कैमरा दिखा सकते हो।');
+      try { stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false }); } catch (e) { throw new Error('स्क्रीन शेयर की अनुमति नहीं मिली, Boss।'); }
+    } else {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('इस ब्राउज़र में कैमरा नहीं चलता, Boss।');
+      try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false }); }
+      catch (e) { throw new Error('कैमरे की अनुमति नहीं मिली, Boss। ब्राउज़र में कैमरा अनुमति दो।'); }
+    }
+    var v = document.createElement('video'); v.muted = true; v.playsInline = true; v.srcObject = stream; await v.play().catch(function () {});
+    await new Promise(function (r) { setTimeout(r, 700); });
+    var w = v.videoWidth || 640, h = v.videoHeight || 480, k = Math.min(1, 1024 / Math.max(w, h)), c = document.createElement('canvas'); c.width = Math.round(w * k); c.height = Math.round(h * k);
+    c.getContext('2d').drawImage(v, 0, 0, c.width, c.height); stream.getTracks().forEach(function (t) { t.stop(); });
+    return c.toDataURL('image/jpeg', 0.82).split(',')[1];
+  }
+  async function visionFlow(cmd) {
+    if (!cfg.key) return { err: true, text: 'देखने और पहचानने के लिए Gemini API Key चाहिए, Boss। ⚙ SETTINGS में पेस्ट करो।' };
+    var img;
+    try { img = await captureFrame(cmd.src); } catch (e) { return { err: true, text: e.message }; }
+    var d = document.createElement('div'); d.className = 'msg me'; d.innerHTML = '<span class="who">' + (cmd.src === 'screen' ? 'SCREEN' : 'CAMERA') + '</span><img alt="" style="max-width:100%;border-radius:8px" src="data:image/jpeg;base64,' + img + '">';
+    $('log').appendChild(d); $('log').scrollTop = $('log').scrollHeight;
+    var q = (cmd.text && cmd.text.length > 3 ? cmd.text : 'इसमें क्या दिख रहा है?') + '\n(ये तस्वीर Boss के ' + (cmd.src === 'screen' ? 'स्क्रीन' : 'कैमरे') + ' की है। उसी भाषा में छोटा जवाब दो, 3 वाक्य तक।)';
+    try { return { text: await askGemini(q, img) }; } catch (e) { return { err: true, text: (e && e.message) || 'देख नहीं पाया, Boss।' }; }
+  }
+  $('eyeBtn').addEventListener('click', function () { submit('ये क्या है, देखकर बताओ'); });
+
+  /* =====================================================
+     bhejna: command ya AI
+  ===================================================== */
+  function reply(text, cls) {
+    if (!text) return Promise.resolve();
+    addChat('ai', text, cls); history.push({ role: 'model', text: text }); labSay(text);
+    return speak(text);
+  }
+  async function submit(text) {
+    text = (text || '').trim(); if (!text || busy) return;
+    busy = true; stopWakeEngines(); nmClear(); addChat('me', text); history.push({ role: 'user', text: text });
+    nm('in'); setState('thinking'); $('nmState').textContent = 'PROCESSING';
+    await new Promise(function (r) { setTimeout(r, 160); }); nm('intent');
+    var t0 = performance.now(), cmd = null;
+    try { cmd = parse(text); } catch (e) {}
+    try {
+      if (cmd && cmd.type === 'vision') {
+        nm('ai'); var vr = await visionFlow(cmd); nm('out'); await reply(vr.text, vr.err ? 'err' : '');
+      } else if (cmd) {
+        nm('tool'); var out = run(cmd); addTool(out.tool, ((performance.now() - t0) / 1000 + 0.1).toFixed(1));
+        nm('out'); await reply(out.text);
+      } else {
+        nm('ai'); var ans = await askAI(text); nm('out');
+        if (typeof ans === 'string') await reply(ans); else await reply(ans.err, 'err');
+      }
+    } catch (e) { await reply('कुछ गड़बड़ हो गई, Boss। फिर से कहो।', 'err'); }
+    busy = false; if (state !== 'speaking') setState('idle');
+    setTimeout(nmClear, 900);
+    if (cfg.live) setTimeout(function () { if (cfg.live && !busy && state === 'idle') listen(); }, 500); else resumeWake();
+  }
+  $('form').addEventListener('submit', function (e) { e.preventDefault(); var t = $('text').value; $('text').value = ''; submit(t); });
+  $('labform').addEventListener('submit', function (e) { e.preventDefault(); var t = $('labText').value; $('labText').value = ''; submit(t); });
+
+  /* =====================================================
+     modal: memory / skills / directive / settings
+  ===================================================== */
+  function openModal(title, node) {
+    var box = $('mbox'); box.innerHTML = '<h2>' + title + '<button type="button" id="mclose" aria-label="बंद">✕</button></h2>';
+    box.appendChild(node); $('modal').hidden = false; $('mclose').addEventListener('click', closeModal);
+  }
+  function closeModal() { $('modal').hidden = true; }
+  $('modal').addEventListener('click', function (e) { if (e.target === $('modal')) closeModal(); });
+  function mk(html) { var d = document.createElement('div'); d.innerHTML = html; return d; }
+
+  function openSettings() {
+    var d = mk('<label>Gemini API Key (Google AI Studio से)</label>' +
+      '<div class="row"><input type="password" id="fKey" placeholder="AIza…" autocomplete="off" spellcheck="false"><button class="btn ghost" type="button" id="fEye">👁</button></div>' +
+      '<label>Model का नाम (खाली छोड़ना सबसे अच्छा: पुराना नाम बंद हो जाए तो ऐप अपने आप नया चुन लेता है)</label><input type="text" id="fModel" placeholder="खाली = अपने आप (gemini-flash-latest)">' +
+      '<label>बोलने की भाषा</label><select id="fLang"><option value="hi-IN">हिंदी</option><option value="en-IN">English</option></select>' +
+      '<div class="chk"><input type="checkbox" id="fSpeak"><span>जवाब बोलकर सुनाओ</span></div>' +
+      '<div class="chk"><input type="checkbox" id="fLive"><span>लगातार सुनो (हैंड्सफ्री)</span></div>' +
+      '<label>जगाने का तरीका (👂 बटन से चालू करो; ऐप खुला और स्क्रीन चालू रहे)</label><select id="fWakeMode"><option value="voice">"जार्विस" बोलो</option><option value="clap">दो बार ताली बजाओ</option></select>' +
+      '<div class="row"><button class="btn" type="button" id="fSave">सेव</button><button class="btn ghost" type="button" id="fTest">Key जाँचो</button></div>' +
+      '<p class="note" id="fMsg">Key सिर्फ़ इसी फ़ोन में रहती है और सीधे Google को जाती है। इसे किसी को मत भेजना।</p>' +
+      '<p class="note">📲 ऐप की तरह इंस्टॉल: Android Chrome में ⋮ → "Install app" (या ऊपर 📲 बटन)। iPhone में Safari → Share → "Add to Home Screen"।</p>');
+    openModal('SETTINGS', d);
+    $('fKey').value = cfg.key; $('fModel').value = cfg.model; $('fLang').value = cfg.lang; $('fSpeak').checked = cfg.speak; $('fLive').checked = cfg.live; $('fWakeMode').value = cfg.wakeMode;
+    $('fEye').addEventListener('click', function () { $('fKey').type = $('fKey').type === 'password' ? 'text' : 'password'; });
+    function grab() { cfg.key = $('fKey').value.trim(); cfg.model = $('fModel').value.trim(); cfg.lang = $('fLang').value; cfg.speak = $('fSpeak').checked; cfg.live = $('fLive').checked; cfg.wakeMode = $('fWakeMode').value; saveCfg(); geminiModelResolved = ''; if (cfg.wake === 'on') { stopWakeEngines(); resumeWake(); } }
+    $('fSave').addEventListener('click', function () { grab(); closeModal(); addChat('ai', cfg.key ? 'Gemini Key सेव हो गई, Boss। अब सवाल पूछो!' : 'सेटिंग सेव हो गई, Boss।'); if (cfg.live) listen(); });
+    $('fTest').addEventListener('click', async function () {
+      grab(); var msg = $('fMsg'); if (!cfg.key) { msg.textContent = 'पहले Key पेस्ट करो।'; return; }
+      msg.textContent = 'जाँच रहा हूँ…';
+      try { history = []; history.push({ role: 'user', text: 'सिर्फ़ "तैयार, Boss" लिखो।' }); var a = await askGemini('x'); history = []; msg.textContent = '✅ Key काम कर रही है: ' + a.slice(0, 60); }
+      catch (e) { history = []; msg.textContent = '❌ ' + ((e && e.message) || 'कुछ गड़बड़'); }
+    });
+  }
+  function openMemory() {
+    var ns = getNotes(), d = mk('<ul>' + (ns.length ? ns.map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('') : '<li>अभी कुछ याद नहीं रखा।</li>') + '</ul><div class="row"><button class="btn ghost" type="button" id="mClear">सब मिटाओ</button></div><p class="note">बोलो: "याद रखो ..." तो यहाँ जुड़ जाएगा।</p>');
+    openModal('MEMORY', d); $('mClear').addEventListener('click', function () { setNotes([]); closeModal(); });
+  }
+  function openSkills() {
+    openModal('SKILLS', mk('<ul><li>समय, तारीख, "टाइमर 5 मिनट"</li><li>"याद रखो ...", "मेरे नोट्स दिखाओ"</li><li>"यूट्यूब खोलो", "गूगल पर ... खोजो", "गाना बजाओ ..."</li><li>"25 गुणा 4 कितना होगा"</li><li>"लैब खोलो", "armor mode", "x-ray", "robot ढाँचा खोलो", "robot हाथ हिलाओ"</li><li>"कैमरा चालू करो" (हाथ से रोबोट कंट्रोल)</li><li>बाकी हर सवाल: Gemini AI</li></ul><p class="note">SPACE दबाए रखो और बोलो, छोड़ते ही Jarvis सुनेगा।</p>'));
+  }
+  function openDirective() {
+    var d = mk('<label>Jarvis का स्वभाव और नियम (AI को ये निर्देश मिलते हैं)</label><textarea id="dText"></textarea><div class="row"><button class="btn" type="button" id="dSave">सेव</button><button class="btn ghost" type="button" id="dReset">पहले जैसा</button></div>');
+    openModal('DIRECTIVE', d); $('dText').value = cfg.directive || DIRECTIVE;
+    $('dSave').addEventListener('click', function () { cfg.directive = $('dText').value.trim() || DIRECTIVE; saveCfg(); closeModal(); });
+    $('dReset').addEventListener('click', function () { $('dText').value = DIRECTIVE; });
+  }
+  $('settingsBtn').addEventListener('click', openSettings);
+  Array.prototype.forEach.call(document.querySelectorAll('.node'), function (n) {
+    n.addEventListener('click', function () { var m = n.getAttribute('data-m'); ({ memory: openMemory, skills: openSkills, directive: openDirective, settings: openSettings })[m](); });
+  });
+
+  /* =====================================================
+     ORB: chamakta hua kan-gola
+  ===================================================== */
+  var orb = { c: $('orb'), pts: [], ang: 0, w: 0, h: 0, dpr: 1 };
+  orb.x = orb.c.getContext('2d');
+  (function () { var N = 1100; for (var i = 0; i < N; i++) { var y = 1 - 2 * (i + 0.5) / N, r = Math.sqrt(1 - y * y), th = i * 2.399963; orb.pts.push([Math.cos(th) * r, y, Math.sin(th) * r, Math.random()]); } })();
+  function sizeCanvas(cv, obj) {
+    var dpr = Math.min(window.devicePixelRatio || 1, 2), w = cv.clientWidth, h = cv.clientHeight;
+    if (!w || !h) return false;
+    if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+    obj.w = w; obj.h = h; obj.dpr = dpr; return true;
+  }
+  function drawOrb(now) {
+    if (!sizeCanvas(orb.c, orb)) return;
+    var x = orb.x, W = orb.w, H = orb.h, t = now / 1000;
+    x.setTransform(orb.dpr, 0, 0, orb.dpr, 0, 0); x.clearRect(0, 0, W, H);
+    var spin = { idle: 0.004, listening: 0.011, thinking: 0.045, speaking: 0.015 }[state];
+    orb.ang += spin;
+    var amp = state === 'speaking' ? 0.05 + 0.05 * Math.abs(Math.sin(t * 13) * Math.sin(t * 5.3)) : state === 'listening' ? 0.045 * Math.sin(t * 6) : 0.015 * Math.sin(t * 2);
+    var cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.36 * (1 + amp), ca = Math.cos(orb.ang), sa = Math.sin(orb.ang), tilt = 0.35, ct = Math.cos(tilt), st = Math.sin(tilt);
+    var g = x.createRadialGradient(cx, cy, 0, cx, cy, R * 1.25);
+    g.addColorStop(0, state === 'speaking' ? 'rgba(255,200,87,.28)' : state === 'listening' ? 'rgba(41,255,138,.25)' : 'rgba(63,214,255,.25)'); g.addColorStop(1, 'rgba(63,214,255,0)');
+    x.fillStyle = g; x.fillRect(0, 0, W, H);
+    x.globalCompositeOperation = 'lighter';
+    var jit = state === 'thinking' ? 2.4 : 0;
+    for (var i = 0; i < orb.pts.length; i++) {
+      var p = orb.pts[i], px = p[0] * ca + p[2] * sa, pz = -p[0] * sa + p[2] * ca, py = p[1];
+      var y2 = py * ct - pz * st, z2 = py * st + pz * ct, d = (z2 + 1) / 2;
+      var sx = cx + px * R + (jit ? (Math.random() - 0.5) * jit : 0), sy = cy + y2 * R + (jit ? (Math.random() - 0.5) * jit : 0), s = 0.7 + d * 1.7;
+      var hue = state === 'speaking' ? 40 : state === 'listening' ? 140 : 190 + d * 14;
+      x.fillStyle = 'hsla(' + hue + ',100%,' + (50 + d * 25) + '%,' + (0.18 + 0.82 * d * (0.6 + 0.4 * p[3])) + ')';
+      x.fillRect(sx, sy, s, s);
+    }
+    x.globalCompositeOperation = 'source-over';
+  }
+
+  /* links: node se orb tak rangeen lakeeren */
+  function drawLinks() {
+    var svg = $('links'), box = $('corebox').getBoundingClientRect(), o = $('orb').getBoundingClientRect(), vertical = getComputedStyle($('corebox')).flexDirection === 'column';
+    var html = '', nodes = document.querySelectorAll('.node'), cols = ['#3fd6ff', '#29ff8a', '#ff4d5e', '#e6f6ff'];
+    var ox = o.left - box.left + o.width / 2, oy = o.top - box.top + o.height / 2, R = o.width * 0.36;
+    for (var i = 0; i < nodes.length; i++) {
+      var r = nodes[i].getBoundingClientRect();
+      var sx = vertical ? r.left - box.left + r.width / 2 : r.right - box.left, sy = vertical ? r.bottom - box.top : r.top - box.top + r.height / 2;
+      var ang = Math.atan2(sy - oy, sx - ox), ex = ox + Math.cos(ang) * R, ey = oy + Math.sin(ang) * R;
+      var c1x = vertical ? sx : sx + (ex - sx) * 0.55, c1y = vertical ? sy + (ey - sy) * 0.55 : sy, c2x = vertical ? ex : ex - (ex - sx) * 0.3, c2y = vertical ? ey - (ey - sy) * 0.3 : ey;
+      html += '<path d="M' + sx.toFixed(1) + ' ' + sy.toFixed(1) + ' C' + c1x.toFixed(1) + ' ' + c1y.toFixed(1) + ' ' + c2x.toFixed(1) + ' ' + c2y.toFixed(1) + ' ' + ex.toFixed(1) + ' ' + ey.toFixed(1) + '" stroke="' + cols[i] + '" style="color:' + cols[i] + '"/>';
+    }
+    svg.innerHTML = html;
+  }
+
+  /* =====================================================
+     MAP: dot-matrix duniya ka naksha
+  ===================================================== */
+  var CONT = [
+    [[-168, 66], [-140, 70], [-95, 72], [-80, 68], [-62, 60], [-55, 50], [-67, 44], [-76, 36], [-81, 25], [-97, 26], [-105, 22], [-117, 32], [-125, 42], [-124, 49], [-135, 58], [-150, 60]],
+    [[-97, 26], [-88, 16], [-80, 8], [-77, 8], [-85, 12], [-92, 15], [-97, 19]],
+    [[-80, 8], [-72, 12], [-62, 10], [-50, 0], [-35, -6], [-39, -18], [-48, -27], [-58, -38], [-66, -46], [-70, -55], [-75, -48], [-72, -30], [-70, -18], [-81, -6]],
+    [[-10, 36], [-9, 43], [-2, 48], [3, 51], [8, 57], [14, 55], [20, 60], [30, 70], [40, 68], [40, 50], [28, 44], [22, 36], [12, 38], [3, 37]],
+    [[-17, 21], [-10, 35], [10, 37], [32, 31], [35, 24], [43, 12], [51, 12], [40, -4], [40, -15], [34, -27], [20, -35], [14, -22], [9, -1], [-9, 5], [-17, 14]],
+    [[30, 70], [60, 75], [100, 77], [140, 72], [170, 68], [160, 55], [142, 46], [122, 40], [121, 30], [108, 20], [100, 10], [105, 2], [98, 8], [92, 22], [80, 8], [73, 20], [67, 25], [57, 25], [50, 30], [35, 28], [36, 36], [28, 42], [40, 50], [40, 68]],
+    [[114, -22], [130, -12], [142, -11], [153, -26], [147, -39], [135, -35], [115, -34]],
+    [[-55, 60], [-30, 68], [-20, 78], [-40, 83], [-65, 80]]
+  ];
+  function inPoly(x, y, poly) { var c = false; for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) { var xi = poly[i][0], yi = poly[i][1], xj = poly[j][0], yj = poly[j][1]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; }
+  var map = { c: $('map'), land: [], hot: [], w: 0, h: 0, dpr: 1 };
+  map.x = map.c.getContext('2d');
+  (function () {
+    for (var lat = 80; lat >= -58; lat -= 2.4) for (var lon = -178; lon <= 178; lon += 2.4) {
+      for (var k = 0; k < CONT.length; k++) if (inPoly(lon, lat, CONT[k])) { map.land.push([lon, lat]); break; }
+    }
+    for (var i = 0; i < 18; i++) { var p = map.land[Math.floor(Math.random() * map.land.length)]; map.hot.push({ lon: p[0], lat: p[1], ph: Math.random() * TAU, c: ['255,120,40', '255,200,60', '255,70,70'][i % 3], r: 2 + Math.random() * 3 }); }
+  })();
+  function drawMap(now) {
+    if (!sizeCanvas(map.c, map)) return;
+    var x = map.x, W = map.w, H = map.h; x.setTransform(map.dpr, 0, 0, map.dpr, 0, 0); x.clearRect(0, 0, W, H);
+    var sc = Math.min(W / 360, H / 142), mx = (W - 360 * sc) / 2, my = (H - 142 * sc) / 2;
+    function px(lon) { return mx + (lon + 180) * sc; } function py(lat) { return my + (84 - lat) * sc; }
+    x.strokeStyle = 'rgba(63,214,255,.08)'; x.lineWidth = 1; x.beginPath();
+    for (var gx = 0; gx <= 12; gx++) { x.moveTo(mx + gx * 30 * sc, my); x.lineTo(mx + gx * 30 * sc, my + 142 * sc); } for (var gy = 0; gy <= 4; gy++) { x.moveTo(mx, my + gy * 35.5 * sc); x.lineTo(mx + 360 * sc, my + gy * 35.5 * sc); } x.stroke();
+    var s = Math.max(1.3, sc * 1.35);
+    x.fillStyle = 'rgba(63,214,255,.55)';
+    for (var i = 0; i < map.land.length; i++) x.fillRect(px(map.land[i][0]) - s / 2, py(map.land[i][1]) - s / 2, s, s);
+    x.globalCompositeOperation = 'lighter';
+    for (var h = 0; h < map.hot.length; h++) {
+      var p = map.hot[h], a = 0.5 + 0.5 * Math.sin(now * 0.003 + p.ph), r = p.r * (0.8 + a * 0.6) * Math.max(0.8, sc / 0.8);
+      var gr = x.createRadialGradient(px(p.lon), py(p.lat), 0, px(p.lon), py(p.lat), r * 2.4); gr.addColorStop(0, 'rgba(' + p.c + ',.9)'); gr.addColorStop(1, 'rgba(' + p.c + ',0)');
+      x.fillStyle = gr; x.beginPath(); x.arc(px(p.lon), py(p.lat), r * 2.4, 0, TAU); x.fill();
+    }
+    x.globalCompositeOperation = 'source-over';
+    var sx = ((now * 0.04) % (W + 40)) - 20; x.fillStyle = 'rgba(41,255,138,.18)'; x.fillRect(sx, 0, 2, H);
+  }
+
+  /* =====================================================
+     ROBOT: apna chhota 3D engine (koi library nahi)
+  ===================================================== */
+  var MODE_NAMES = { holo: 'HUMANOID FRAME', armor: 'ARMOR SUIT', xray: 'X-RAY SCAN', points: 'POINT CLOUD' };
+  var MODE_SUB = { holo: 'FULL-BODY PROJECTION', armor: 'COMBAT SUIT RENDER', xray: 'INTERNAL STRUCTURE SCAN', points: 'VERTEX POINT CLOUD' };
+  var R = { c: $('robot'), parts: [], bones: [], mode: 'holo', yaw: 0.5, pitch: 0.12, zoom: 1, speed: 0.4, glow: 1, explode: 0, targetExplode: 0, waveT: 0, labels: true, plat: true,
+    drag: false, lastX: 0, lastY: 0, idleAt: 0, w: 0, h: 0, dpr: 1, handYaw: null, handZoom: null, sim: false, particles: [] };
+  R.x = R.c.getContext('2d');
+
+  function V(x, y, z) { return [x, y, z]; }
+  function sub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
+  function cross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
+  function len3(a) { return Math.hypot(a[0], a[1], a[2]); }
+  function norm3(a) { var l = len3(a) || 1; return [a[0] / l, a[1] / l, a[2] / l]; }
+  function mkBox(cx, cy, cz, w, h, d) {
+    var x = w / 2, y = h / 2, z = d / 2;
+    return { v: [[cx - x, cy - y, cz - z], [cx + x, cy - y, cz - z], [cx + x, cy + y, cz - z], [cx - x, cy + y, cz - z], [cx - x, cy - y, cz + z], [cx + x, cy - y, cz + z], [cx + x, cy + y, cz + z], [cx - x, cy + y, cz + z]],
+      e: [[0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7]],
+      f: [[0, 1, 2, 3], [5, 4, 7, 6], [4, 0, 3, 7], [1, 5, 6, 2], [3, 2, 6, 7], [4, 5, 1, 0]] };
+  }
+  function mkLimb(a, b, r1, r2, seg) {
+    seg = seg || 8; var u = norm3(sub(b, a)), t = Math.abs(u[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0], p1 = norm3(cross(u, t)), p2 = cross(u, p1), v = [], e = [], f = [], i;
+    for (i = 0; i < seg; i++) { var c = Math.cos(i / seg * TAU), s = Math.sin(i / seg * TAU); v.push([a[0] + (p1[0] * c + p2[0] * s) * r1, a[1] + (p1[1] * c + p2[1] * s) * r1, a[2] + (p1[2] * c + p2[2] * s) * r1]); }
+    for (i = 0; i < seg; i++) { c = Math.cos(i / seg * TAU); s = Math.sin(i / seg * TAU); v.push([b[0] + (p1[0] * c + p2[0] * s) * r2, b[1] + (p1[1] * c + p2[1] * s) * r2, b[2] + (p1[2] * c + p2[2] * s) * r2]); }
+    for (i = 0; i < seg; i++) { var j = (i + 1) % seg; e.push([i, j], [seg + i, seg + j], [i, seg + i]); f.push([i, j, seg + j, seg + i]); }
+    f.push(v.slice(0, seg).map(function (_, k) { return k; })); f.push(v.slice(0, seg).map(function (_, k) { return seg + k; }));
+    return { v: v, e: e, f: f };
+  }
+  function mkSphere(c, r, sy, lat, lon) {
+    lat = lat || 5; lon = lon || 10; sy = sy || 1; var v = [[c[0], c[1] + r * sy, c[2]], [c[0], c[1] - r * sy, c[2]]], e = [], f = [], i, j;
+    for (i = 1; i < lat; i++) { var ph = i * Math.PI / lat, rr = Math.sin(ph) * r, yy = Math.cos(ph) * r * sy; for (j = 0; j < lon; j++) { var th = j / lon * TAU; v.push([c[0] + Math.cos(th) * rr, c[1] + yy, c[2] + Math.sin(th) * rr]); } }
+    for (i = 0; i < lat - 1; i++) for (j = 0; j < lon; j++) {
+      var a = 2 + i * lon + j, b = 2 + i * lon + (j + 1) % lon; e.push([a, b]);
+      if (i === 0) { e.push([0, a]); f.push([0, b, a]); }
+      if (i < lat - 2) { var a2 = a + lon, b2 = b + lon; e.push([a, a2]); f.push([a, b, b2, a2]); }
+      if (i === lat - 2) { e.push([1, a]); f.push([1, a, b]); }
+    }
+    return { v: v, e: e, f: f };
+  }
+  function mkRing(c, r, n) { var v = [], e = [], i; for (i = 0; i < n; i++) { v.push([c[0] + Math.cos(i / n * TAU) * r, c[1] + Math.sin(i / n * TAU) * r, c[2]]); e.push([i, (i + 1) % n]); } return { v: v, e: e, f: [] }; }
+  function part(name, grp, col, g, piv) { g.name = name; g.grp = grp; g.col = col; g.piv = piv || null; var s = [0, 0, 0]; g.v.forEach(function (p) { s[0] += p[0]; s[1] += p[1]; s[2] += p[2]; }); g.cen = [s[0] / g.v.length, s[1] / g.v.length, s[2] / g.v.length]; R.parts.push(g); }
+  (function buildRobot() {
+    var armColor = 'body', sh = [[24, 138, 0], [-24, 138, 0]];
+    part('head', 'head', 'body', mkSphere([0, 160, 0], 10, 1.15, 5, 10));
+    part('faceplate', 'head', 'accent', mkBox(0, 159, 8, 13, 12, 4));
+    part('eyeL', 'head', 'glow', mkBox(-4, 162, 10.4, 4.5, 1.6, 1));
+    part('eyeR', 'head', 'glow', mkBox(4, 162, 10.4, 4.5, 1.6, 1));
+    part('neck', 'torso', 'dark', mkLimb([0, 143, 0], [0, 151, 0], 4, 3.6, 8));
+    part('chest', 'torso', 'body', mkBox(0, 128, 0, 40, 28, 20));
+    part('abs', 'torso', 'dark', mkBox(0, 107, 0, 26, 14, 15));
+    part('pelvis', 'torso', 'body', mkBox(0, 96, 0, 30, 9, 17));
+    part('reactor', 'torso', 'glow', mkRing([0, 130, 10.6], 6, 14));
+    part('reactor2', 'torso', 'glow', mkRing([0, 130, 10.6], 3, 10));
+    [1, -1].forEach(function (s) {
+      var g = s > 0 ? 'armR' : 'armL', pv = [24 * s, 138, 0];
+      part('shoulder' + s, g, 'accent', mkSphere([24 * s, 138, 0], 7.5, 1, 4, 8), pv);
+      part('upperArm' + s, g, 'body', mkLimb([24 * s, 138, 0], [29 * s, 114, 0], 5.6, 4.6, 8), pv);
+      part('elbow' + s, g, 'dark', mkSphere([29 * s, 114, 0], 4.8, 1, 4, 8), pv);
+      part('foreArm' + s, g, 'body', mkLimb([29 * s, 114, 0], [30 * s, 92, 3], 4.5, 3.6, 8), pv);
+      part('hand' + s, g, 'accent', mkBox(30 * s, 86, 3, 7, 9, 5), pv);
+      part('hip' + s, 'legs', 'dark', mkSphere([10 * s, 92, 0], 6, 1, 4, 8));
+      part('thigh' + s, 'legs', 'body', mkLimb([10 * s, 92, 0], [11 * s, 52, 1], 7, 5.6, 8));
+      part('knee' + s, 'legs', 'accent', mkSphere([11 * s, 52, 1], 5.6, 1, 4, 8));
+      part('shin' + s, 'legs', 'body', mkLimb([11 * s, 52, 1], [11 * s, 10, 0], 5.2, 4, 8));
+      part('foot' + s, 'legs', 'accent', mkBox(11 * s, 4, 5, 9, 8, 22));
+    });
+    R.bones = [[[0, 96, 0], [0, 140, 0]], [[0, 140, 0], [0, 160, 0]], [[-24, 138, 0], [24, 138, 0]], [[24, 138, 0], [29, 114, 0]], [[29, 114, 0], [30, 90, 3]], [[-24, 138, 0], [-29, 114, 0]], [[-29, 114, 0], [-30, 90, 3]],
+      [[-10, 92, 0], [10, 92, 0]], [[10, 92, 0], [11, 52, 1]], [[11, 52, 1], [11, 6, 0]], [[-10, 92, 0], [-11, 52, 1]], [[-11, 52, 1], [-11, 6, 0]]];
+  })();
+  var LABELS = [['HEAD UNIT', 'L', [0, 162, 0]], ['ARC REACTOR', 'R', [0, 130, 10]], ['LEFT MANIPULATOR', 'L', [-30, 100, 0]], ['RIGHT MANIPULATOR', 'R', [30, 104, 0]], ['CORE STABILIZER', 'L', [0, 104, 0]],
+    ['KNEE SERVO', 'R', [11, 52, 1]], ['BALANCE UNIT', 'L', [-11, 28, 0]]];
+  var COL = { body: [179, 18, 31], accent: [242, 177, 52], dark: [34, 44, 62], glow: [125, 249, 255] };
+  for (var pi = 0; pi < 70; pi++) R.particles.push({ a: Math.random() * TAU, r: 20 + Math.random() * 80, y: Math.random() * 200, v: 6 + Math.random() * 14 });
+
+  function setMode(m) {
+    R.mode = m; $('labName').textContent = MODE_NAMES[m]; $('labSub').textContent = MODE_SUB[m] + ' · DRAG TO ROTATE';
+    Array.prototype.forEach.call(document.querySelectorAll('#modes button'), function (b) { b.classList.toggle('on', b.getAttribute('data-mode') === m); });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('#modes button'), function (b) { b.addEventListener('click', function () { setMode(b.getAttribute('data-mode')); }); });
+  [['sSpeed', 'vSpeed', 'speed'], ['sGlow', 'vGlow', 'glow'], ['sScale', 'vScale', 'zoom']].forEach(function (a) {
+    $(a[0]).addEventListener('input', function () { R[a[2]] = +this.value; $(a[1]).textContent = (+this.value).toFixed(1); });
+  });
+  $('tLabels').addEventListener('change', function () { R.labels = this.checked; });
+  $('tPlat').addEventListener('change', function () { R.plat = this.checked; });
+  $('explodeBtn').addEventListener('click', function () { R.targetExplode = R.targetExplode > 0.5 ? 0 : 1; });
+  $('waveBtn').addEventListener('click', function () { R.waveT = 3.2; });
+  R.c.addEventListener('pointerdown', function (e) { R.drag = true; R.lastX = e.clientX; R.lastY = e.clientY; try { R.c.setPointerCapture(e.pointerId); } catch (er) {} });
+  R.c.addEventListener('pointermove', function (e) { if (!R.drag) return; R.yaw += (e.clientX - R.lastX) * 0.012; R.pitch = clamp(R.pitch + (e.clientY - R.lastY) * 0.005, -0.5, 0.6); R.lastX = e.clientX; R.lastY = e.clientY; R.idleAt = performance.now(); });
+  ['pointerup', 'pointercancel'].forEach(function (t) { R.c.addEventListener(t, function () { R.drag = false; R.idleAt = performance.now(); }); });
+  R.c.addEventListener('wheel', function (e) { e.preventDefault(); R.zoom = clamp(R.zoom - e.deltaY * 0.001, 0.6, 1.6); $('sScale').value = R.zoom; $('vScale').textContent = R.zoom.toFixed(1); }, { passive: false });
+
+  function drawRobot(now) {
+    if (!sizeCanvas(R.c, R)) return;
+    var x = R.x, W = R.w, H = R.h, t = now / 1000, dt = 1 / 60;
+    x.setTransform(R.dpr, 0, 0, R.dpr, 0, 0); x.clearRect(0, 0, W, H);
+    // state update
+    R.explode += (R.targetExplode - R.explode) * 0.07;
+    if (R.waveT > 0) R.waveT -= dt;
+    var waveAmt = R.waveT > 0 ? Math.min(1, R.waveT * 2, (3.2 - R.waveT) * 3) : 0;
+    if (R.handYaw !== null) R.yaw += angDiff(R.yaw, R.handYaw) * 0.12;
+    else if (!R.drag && performance.now() - R.idleAt > 1500) R.yaw += R.speed * 0.012;
+    if (R.handZoom !== null) { R.zoom += (R.handZoom - R.zoom) * 0.12; }
+    var cy = Math.cos(R.yaw), sy = Math.sin(R.yaw), cp = Math.cos(R.pitch), sp = Math.sin(R.pitch);
+    var D = 430, S = H / 250 * R.zoom * (W < 520 ? 0.95 : 1), ox = W / 2, oy = H * 0.5 + H * 0.02;
+    function xf(p, part) {
+      var X = p[0], Y = p[1], Z = p[2];
+      if (part) {
+        if (part.grp === 'armR' || part.grp === 'armL') {
+          var side = part.grp === 'armR' ? 1 : -1, ang = side * (0.04 * Math.sin(t * 1.3)); if (part.grp === 'armR') ang += -waveAmt * (2.4 + 0.25 * Math.sin(t * 9));
+          var dx = X - part.piv[0], dy = Y - part.piv[1], c = Math.cos(ang), s = Math.sin(ang); X = part.piv[0] + dx * c - dy * s; Y = part.piv[1] + dx * s + dy * c;
+        }
+        if (R.explode > 0.01) { var dir = norm3([part.cen[0] * 1.2, (part.cen[1] - 95) * 0.9, part.cen[2] * 1.2 + 0.001]); X += dir[0] * R.explode * 34; Y += dir[1] * R.explode * 34; Z += dir[2] * R.explode * 34; }
+      }
+      Y += 1.2 * Math.sin(t * 1.6);
+      var rx = X * cy + Z * sy, rz = -X * sy + Z * cy, ry = Y - 90, y2 = ry * cp - rz * sp, z2 = ry * sp + rz * cp;
+      var k = D / (D - z2); return [ox + rx * S * k, oy - y2 * S * k, z2, rx, y2];
+    }
+    function proj(p) { return xf(p, null); }
+    var glow = R.glow, mode = R.mode, k;
+
+    // platform + light cone
+    if (R.plat) {
+      var base = proj([0, 0, 0]), top = proj([0, 205, 0]);
+      var left = proj([-70, 0, 0]), right = proj([70, 0, 0]), tl = proj([-34, 205, 0]), tr = proj([34, 205, 0]);
+      var cg = x.createLinearGradient(0, top[1], 0, base[1]); cg.addColorStop(0, 'rgba(63,214,255,0)'); cg.addColorStop(1, 'rgba(63,214,255,' + (0.2 * glow).toFixed(2) + ')');
+      x.fillStyle = cg; x.beginPath(); x.moveTo(tl[0], tl[1]); x.lineTo(tr[0], tr[1]); x.lineTo(right[0] + 8, base[1]); x.lineTo(left[0] - 8, base[1]); x.closePath(); x.fill();
+      [[58, 0.9], [78, 0.6], [100, 0.35]].forEach(function (rr) {
+        x.beginPath(); for (var i = 0; i <= 72; i++) { var a = i / 72 * TAU, q = proj([Math.cos(a) * rr[0], 0, Math.sin(a) * rr[0]]); i ? x.lineTo(q[0], q[1]) : x.moveTo(q[0], q[1]); }
+        x.strokeStyle = 'rgba(125,249,255,' + (rr[1] * 0.8 * Math.min(1, glow)).toFixed(2) + ')'; x.lineWidth = 1.6; x.stroke();
+      });
+      x.beginPath(); for (var n = 0; n < 90; n++) { var a2 = n / 90 * TAU + t * 0.3, q1 = proj([Math.cos(a2) * 106, 0, Math.sin(a2) * 106]), q2 = proj([Math.cos(a2) * (n % 5 ? 112 : 120), 0, Math.sin(a2) * (n % 5 ? 112 : 120)]); x.moveTo(q1[0], q1[1]); x.lineTo(q2[0], q2[1]); }
+      x.strokeStyle = 'rgba(63,214,255,.55)'; x.lineWidth = 1; x.stroke();
+      var dg = x.createRadialGradient(base[0], base[1], 0, base[0], base[1], 90 * S); dg.addColorStop(0, 'rgba(63,214,255,' + (0.35 * glow).toFixed(2) + ')'); dg.addColorStop(1, 'rgba(63,214,255,0)');
+      x.save(); x.translate(base[0], base[1]); x.scale(1, Math.max(0.2, Math.abs(sp) + 0.18)); x.translate(-base[0], -base[1]); x.fillStyle = dg; x.beginPath(); x.arc(base[0], base[1], 90 * S, 0, TAU); x.fill(); x.restore();
+    }
+    x.globalCompositeOperation = 'lighter';
+    R.particles.forEach(function (p) { p.y += p.v * dt; if (p.y > 205) { p.y = 0; p.a = Math.random() * TAU; } var q = proj([Math.cos(p.a + t * 0.2) * p.r, p.y, Math.sin(p.a + t * 0.2) * p.r]); x.fillStyle = 'rgba(125,249,255,' + (0.5 * (1 - p.y / 205) * glow).toFixed(2) + ')'; x.fillRect(q[0], q[1], 1.6, 1.6); });
+    x.globalCompositeOperation = 'source-over';
+
+    // transform all parts
+    var tp = R.parts.map(function (pt) { return { pt: pt, p: pt.v.map(function (v) { return xf(v, pt); }) }; });
+    if (mode === 'armor') {
+      var faces = [], L = norm3([-0.35, 0.55, 0.75]);
+      tp.forEach(function (o) {
+        var col = COL[o.pt.col];
+        o.pt.f.forEach(function (f) {
+          if (f.length < 3) return; var pts = f.map(function (i) { return o.p[i]; }), z = 0; pts.forEach(function (q) { z += q[2]; });
+          var n = norm3(cross([pts[1][3] - pts[0][3], pts[1][4] - pts[0][4], pts[1][2] - pts[0][2]], [pts[2][3] - pts[0][3], pts[2][4] - pts[0][4], pts[2][2] - pts[0][2]]));
+          var c = [0, 0, 0]; pts.forEach(function (q) { c[0] += q[3]; c[1] += q[4]; c[2] += q[2]; }); c = [c[0] / pts.length, c[1] / pts.length, c[2] / pts.length];
+          var pc = tp[0].p, cen = [0, 0, 0]; o.p.forEach(function (q) { cen[0] += q[3]; cen[1] += q[4]; cen[2] += q[2]; }); cen = [cen[0] / o.p.length, cen[1] / o.p.length, cen[2] / o.p.length];
+          if (n[0] * (c[0] - cen[0]) + n[1] * (c[1] - cen[1]) + n[2] * (c[2] - cen[2]) < 0) n = [-n[0], -n[1], -n[2]];
+          var lit = 0.3 + 0.7 * Math.max(0, n[0] * L[0] + n[1] * L[1] + n[2] * L[2]);
+          faces.push({ pts: pts, z: z / pts.length, col: col, lit: lit, glow: o.pt.col === 'glow' });
+        });
+      });
+      faces.sort(function (a, b) { return a.z - b.z; });
+      faces.forEach(function (f) {
+        x.beginPath(); f.pts.forEach(function (q, i) { i ? x.lineTo(q[0], q[1]) : x.moveTo(q[0], q[1]); }); x.closePath();
+        x.fillStyle = 'rgb(' + Math.round(f.col[0] * f.lit) + ',' + Math.round(f.col[1] * f.lit) + ',' + Math.round(f.col[2] * f.lit) + ')'; x.fill();
+        x.strokeStyle = 'rgba(0,0,0,.35)'; x.lineWidth = 0.7; x.stroke();
+      });
+      // reactor glow
+      var rc = xf([0, 130, 10.8], null), rg = x.createRadialGradient(rc[0], rc[1], 0, rc[0], rc[1], 20 * S); rg.addColorStop(0, 'rgba(180,255,255,' + (0.9 * Math.min(1, glow)).toFixed(2) + ')'); rg.addColorStop(1, 'rgba(63,214,255,0)');
+      x.globalCompositeOperation = 'lighter'; x.fillStyle = rg; x.beginPath(); x.arc(rc[0], rc[1], 20 * S, 0, TAU); x.fill(); x.globalCompositeOperation = 'source-over';
+    } else if (mode === 'points') {
+      x.globalCompositeOperation = 'lighter';
+      tp.forEach(function (o) { o.p.forEach(function (q) { var d = clamp((q[2] + 60) / 120, 0.15, 1); x.fillStyle = 'rgba(125,249,255,' + (d * 0.95).toFixed(2) + ')'; var s = (1.2 + d * 2.2) * Math.min(1.6, glow); x.fillRect(q[0] - s / 2, q[1] - s / 2, s, s); }); });
+      x.globalCompositeOperation = 'source-over';
+    } else {
+      // holo + xray: glowing edges (depth ke hisaab se 4 parat)
+      var buckets = [[], [], [], []];
+      tp.forEach(function (o) { var gl = o.pt.col === 'glow'; o.pt.e.forEach(function (e) { var a = o.p[e[0]], b = o.p[e[1]], d = clamp(((a[2] + b[2]) / 2 + 60) / 120, 0, 0.999); buckets[gl ? 3 : Math.floor(d * 3)].push(a[0], a[1], b[0], b[1]); }); });
+      if (mode === 'xray') {
+        x.fillStyle = 'rgba(80,200,255,.05)';
+        tp.forEach(function (o) { o.pt.f.forEach(function (f) { if (f.length < 3) return; x.beginPath(); f.forEach(function (i, n) { n ? x.lineTo(o.p[i][0], o.p[i][1]) : x.moveTo(o.p[i][0], o.p[i][1]); }); x.closePath(); x.fill(); }); });
+      } else {
+        x.fillStyle = 'rgba(63,214,255,.045)';
+        tp.forEach(function (o) { if (o.pt.col === 'glow') return; o.pt.f.forEach(function (f) { if (f.length < 3) return; x.beginPath(); f.forEach(function (i, n) { n ? x.lineTo(o.p[i][0], o.p[i][1]) : x.moveTo(o.p[i][0], o.p[i][1]); }); x.closePath(); x.fill(); }); });
+      }
+      x.globalCompositeOperation = 'lighter'; x.lineCap = 'round';
+      var alphas = [0.25, 0.5, 0.85, 1], colors = ['63,214,255', '63,214,255', '125,249,255', '190,255,255'];
+      for (k = 0; k < 4; k++) {
+        var seg = buckets[k]; if (!seg.length) continue;
+        x.beginPath(); for (var i = 0; i < seg.length; i += 4) { x.moveTo(seg[i], seg[i + 1]); x.lineTo(seg[i + 2], seg[i + 3]); }
+        x.strokeStyle = 'rgba(' + colors[k] + ',' + (0.14 * alphas[k] * glow).toFixed(3) + ')'; x.lineWidth = 4.5 * glow; x.stroke();
+        x.strokeStyle = 'rgba(' + colors[k] + ',' + Math.min(1, alphas[k] * (0.55 + 0.35 * glow)).toFixed(2) + ')'; x.lineWidth = 1.1; x.stroke();
+      }
+      if (mode === 'xray') {          // andar ki haddiyan
+        x.strokeStyle = 'rgba(255,255,255,.9)'; x.lineWidth = 2.2; x.beginPath();
+        R.bones.forEach(function (b) { var a = xf(b[0], null), c = xf(b[1], null); x.moveTo(a[0], a[1]); x.lineTo(c[0], c[1]); }); x.stroke();
+        R.bones.forEach(function (b) { var a = xf(b[0], null); x.fillStyle = 'rgba(255,200,87,.9)'; x.beginPath(); x.arc(a[0], a[1], 2.6, 0, TAU); x.fill(); });
+        var hc = xf([0, 126, 3], null), hg = x.createRadialGradient(hc[0], hc[1], 0, hc[0], hc[1], 18 * S); hg.addColorStop(0, 'rgba(255,90,100,.85)'); hg.addColorStop(1, 'rgba(255,90,100,0)'); x.fillStyle = hg; x.beginPath(); x.arc(hc[0], hc[1], 18 * S, 0, TAU); x.fill();
+      }
+      x.globalCompositeOperation = 'source-over';
+    }
+
+    // labels (aapas me na takrayen isliye ginti se jagah dete hain)
+    if (R.labels && R.explode < 0.6) {
+      var fs = Math.max(9, Math.min(12, W / 48)); x.font = '600 ' + fs + 'px ui-monospace, Menlo, Consolas, monospace'; x.lineWidth = 1;
+      var items = LABELS.map(function (lb, i) { var q = xf(lb[2], null); return { lb: lb, i: i, q: q, left: lb[1] === 'L', ey: q[1] }; });
+      ['L', 'R'].forEach(function (sd) {
+        var arr = items.filter(function (o) { return o.lb[1] === sd; }).sort(function (a, b) { return a.ey - b.ey; });
+        for (var j = 1; j < arr.length; j++) arr[j].ey = Math.max(arr[j].ey, arr[j - 1].ey + fs * 3.2);
+      });
+      items.forEach(function (o) {
+        var q = o.q, left = o.left, ex = left ? W * 0.06 : W * 0.94, ey = Math.min(o.ey, H * 0.9);
+        x.strokeStyle = 'rgba(125,249,255,.6)'; x.beginPath(); x.moveTo(q[0], q[1]); x.lineTo(left ? Math.min(q[0] - 14, ex + 40) : Math.max(q[0] + 14, ex - 40), ey); x.lineTo(ex, ey); x.stroke();
+        x.fillStyle = 'rgba(125,249,255,1)'; x.beginPath(); x.arc(q[0], q[1], 2.2, 0, TAU); x.fill();
+        x.fillStyle = 'rgba(190,240,255,.95)'; x.textAlign = left ? 'left' : 'right'; x.fillText(o.lb[0], ex, ey - 4);
+        x.fillStyle = 'rgba(125,249,255,.6)'; x.fillText((40 + ((o.i * 17.3 + t * 0.7) % 50)).toFixed(1), ex, ey + fs + 1);
+      });
+    }
+  }
+  function angDiff(a, b) { return Math.atan2(Math.sin(b - a), Math.cos(b - a)); }
+
+  /* LAB ke aankde (analysis aur parts ki suchi) */
+  var TILES = [['TEMP', '36°'], ['PWR', '88%'], ['LOAD', '42%'], ['SYNC', '99%'], ['SERVO', '12/12'], ['GYRO', 'OK'], ['LINK', '5G'], ['FLUX', '4.2']];
+  var COMPS = [['SPECTRUM HEAD', 12.4], ['ARC REACTOR', 38.1], ['CHEST ARMOR', 54.6], ['R. MANIPULATOR', 21.7], ['L. MANIPULATOR', 21.5], ['CORE STABILIZER', 33.2], ['KNEE SERVOS', 18.9], ['BALANCE UNIT', 27.3]];
+  function renderLabNumbers() {
+    $('tiles').innerHTML = TILES.map(function (tl, i) { return '<div class="tile' + (i === 2 ? ' hot' : '') + '"><b>' + tl[1] + '</b><small>' + tl[0] + '</small></div>'; }).join('');
+    $('comp').innerHTML = COMPS.map(function (c, i) { return '<div><span>' + c[0] + '</span><b id="cv' + i + '">' + c[1].toFixed(1) + ' kg</b></div>'; }).join('');
+  }
+  renderLabNumbers();
+  setInterval(function () {
+    $('integ').textContent = (97.4 + (Math.random() - 0.5) * 0.4).toFixed(1);
+    COMPS.forEach(function (c, i) { var e = $('cv' + i); if (e) e.textContent = (c[1] + (Math.random() - 0.5) * 0.6).toFixed(1) + ' kg'; });
+  }, 900);
+
+  /* =====================================================
+     HAATH SE KAABU: camera + MediaPipe (ya halchal pehchaan)
+  ===================================================== */
+  var hand = { on: false, stream: null, lm: null, raf: 0, engine: '', sim: false, prev: null, fist: false };
+  function handState(s) { $('handState').textContent = s; }
+  async function startHand() {
+    if (hand.on) { stopHand(); return; }
+    stopSim();
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { reply('इस ब्राउज़र में कैमरा नहीं चल सकता, Boss। Chrome में खोलो।', 'err'); return; }
+    try { hand.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 640, height: 480 }, audio: false }); }
+    catch (e) { reply('कैमरे की अनुमति नहीं मिली, Boss। ब्राउज़र में कैमरा अनुमति दो (अगर ये पेज किसी ऐप के अंदर खुला है तो Chrome में खोलो)। तब तक "🎭 डेमो हाथ" से देख सकते हो।', 'err'); return; }
+    var v = $('cam'); v.srcObject = hand.stream; await v.play().catch(function () {});
+    $('handbox').hidden = false; hand.on = true; $('handBtn').classList.add('on'); $('handBtn').textContent = '⏹ कैमरा बंद करो'; handState('STARTING');
+    try {
+      var vision = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs');
+      var files = await vision.FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
+      hand.lm = await vision.HandLandmarker.createFromOptions(files, { baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task' }, runningMode: 'VIDEO', numHands: 1 });
+      hand.engine = 'mediapipe'; handState('HAND TRACK'); $('camcap').textContent = 'HAND TRACKING · ON';
+    } catch (e) { hand.engine = 'motion'; handState('MOTION'); $('camcap').textContent = 'MOTION MODE (हाथ हिलाओ)'; }
+    hand.raf = requestAnimationFrame(handLoop);
+  }
+  function stopHand() {
+    hand.on = false; cancelAnimationFrame(hand.raf);
+    if (hand.stream) hand.stream.getTracks().forEach(function (t) { t.stop(); }); hand.stream = null;
+    $('handbox').hidden = true; $('handBtn').classList.remove('on'); $('handBtn').textContent = '📷 कैमरे से हाथ कंट्रोल'; handState('OFF'); R.handYaw = null; R.handZoom = null;
+  }
+  var mCanvas = document.createElement('canvas'); mCanvas.width = 64; mCanvas.height = 48; var mCtx = mCanvas.getContext('2d', { willReadFrequently: true });
+  function handLoop() {
+    if (!hand.on) return;
+    var v = $('cam'), ov = $('camov'); ov.width = v.videoWidth || 320; ov.height = v.videoHeight || 240; var o = ov.getContext('2d'); o.clearRect(0, 0, ov.width, ov.height);
+    if (v.readyState >= 2) {
+      if (hand.engine === 'mediapipe' && hand.lm) {
+        var res = hand.lm.detectForVideo(v, performance.now()), L = res && res.landmarks && res.landmarks[0];
+        if (L) {
+          o.fillStyle = '#29ff8a'; L.forEach(function (p) { o.beginPath(); o.arc(p[0] * ov.width, p[1] * ov.height, 3, 0, TAU); o.fill(); });
+          var cx = (L[0].x + L[5].x + L[9].x + L[13].x + L[17].x) / 5, size = Math.hypot(L[0].x - L[9].x, L[0].y - L[9].y) || 0.1;
+          R.handYaw = (0.5 - (1 - cx)) * -Math.PI * 2.4;          // seedha mirror: haath daayen = robot daayen
+          var pinch = Math.hypot(L[4].x - L[8].x, L[4].y - L[8].y) / size; R.handZoom = clamp(0.7 + clamp(pinch / 1.4, 0, 1) * 0.9, 0.6, 1.6);
+          var ext = ([8, 12, 16, 20].reduce(function (s, i) { return s + Math.hypot(L[i].x - L[0].x, L[i].y - L[0].y); }, 0) / 4) / size;
+          if (ext < 1.45 && !hand.fist) { hand.fist = true; R.targetExplode = 0; } else if (ext > 1.9 && hand.fist !== false) { hand.fist = false; R.targetExplode = 1; } else if (ext > 1.9) { R.targetExplode = 1; }
+          $('sScale').value = R.zoom; $('vScale').textContent = R.zoom.toFixed(1); handState(ext > 1.9 ? 'OPEN' : ext < 1.45 ? 'FIST' : 'TRACK');
+        } else { R.handYaw = null; R.handZoom = null; handState('NO HAND'); }
+      } else {                                                  // halchal pehchaan: haath/haath-jaisa jo hile uska centre
+        mCtx.drawImage(v, 0, 0, 64, 48); var d = mCtx.getImageData(0, 0, 64, 48).data, cur = new Uint8Array(64 * 48), sx = 0, n = 0;
+        for (var i = 0; i < cur.length; i++) cur[i] = (d[i * 4] + d[i * 4 + 1] + d[i * 4 + 2]) / 3;
+        if (hand.prev) { for (i = 0; i < cur.length; i++) if (Math.abs(cur[i] - hand.prev[i]) > 28) { sx += i % 64; n++; } }
+        hand.prev = cur;
+        if (n > 25) { var mx = sx / n / 64; R.handYaw = (mx - 0.5) * -Math.PI * 2.4 + (R.handYaw || 0) * 0.0; handState('MOVING'); } else handState('MOTION');
+      }
+    }
+    hand.raf = requestAnimationFrame(handLoop);
+  }
+  $('handBtn').addEventListener('click', startHand);
+
+  // demo haath: bina camera ke dikhane ke liye
+  var simId = 0, simT = 0;
+  function startSim() {
+    if (hand.on) stopHand(); hand.sim = true; simT = 0; $('demoHandBtn').classList.add('on'); $('demoHandBtn').textContent = '⏹ डेमो हाथ रोको'; handState('DEMO'); $('vhand').style.display = 'block';
+    simId = setInterval(function () {
+      simT += 0.016; var hx = 0.5 + 0.32 * Math.sin(simT * 0.9), pinch = 0.5 + 0.5 * Math.sin(simT * 0.55);
+      R.handYaw = R.yaw + angDiff(R.yaw, (0.5 - hx) * -Math.PI * 2.4); R.handYaw = (hx - 0.5) * Math.PI * 2.4; R.handZoom = 0.75 + pinch * 0.7;
+      var open = Math.sin(simT * 0.4) > 0.2; R.targetExplode = open ? 1 : 0;
+      var lc = $('labcenter'), vh = $('vhand'); vh.style.left = (hx * (lc.clientWidth - 40) + 3) + 'px'; vh.style.bottom = (110 + pinch * 60) + 'px'; vh.style.transform = 'scale(' + (0.7 + pinch * 0.9) + ')'; vh.style.borderStyle = open ? 'solid' : 'dashed';
+      $('sScale').value = R.zoom; $('vScale').textContent = R.zoom.toFixed(1);
+    }, 16);
+  }
+  function stopSim() { if (!hand.sim) return; clearInterval(simId); hand.sim = false; $('vhand').style.display = 'none'; R.handYaw = null; R.handZoom = null; $('demoHandBtn').classList.remove('on'); $('demoHandBtn').textContent = '🎭 डेमो हाथ (बिना कैमरे)'; handState('OFF'); }
+  $('demoHandBtn').addEventListener('click', function () { hand.sim ? stopSim() : startSim(); });
+
+  /* =====================================================
+     ghadi, network, nigrani, shuruaat
+  ===================================================== */
+  function updateClock() { var d = new Date(); $('clock').textContent = ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); $('netDot').classList.toggle('off', navigator.onLine === false); }
+  updateClock(); setInterval(updateClock, 10000);
+  window.addEventListener('online', updateClock); window.addEventListener('offline', updateClock);
+  function resizeAll() { drawLinks(); }
+  window.addEventListener('resize', resizeAll);
+  if (window.ResizeObserver) new ResizeObserver(resizeAll).observe($('corebox'));
+  function frame(now) {
+    var tab = document.body.getAttribute('data-tab'), wide = window.innerWidth >= 1000;
+    var showCore = wide ? document.body.getAttribute('data-view') === 'core' : (tab === 'core'), showMap = wide ? showCore : tab === 'map', showLab = wide ? !showCore : tab === 'lab';
+    if (showCore) drawOrb(now);
+    if (showMap) drawMap(now);
+    if (showLab) drawRobot(now);
+    requestAnimationFrame(frame);
+  }
+  window.JARVIS = { parse: parse, submit: submit, setMode: setMode, robot: R, wakeHits: function () { return wakeHits; }, cfg: cfg };      // sirf jaanch ke liye
+
+  renderNotes(); setMode('holo'); setState('idle'); syncWake();
+  if (cfg.wake === 'on') { cfg.wake = 'off'; syncWake(); }   // phone me page khulte hi mic apne aap na khule
+  addChat('ai', 'नमस्ते Boss! मैं JARVIS हूँ।\nबोलने के लिए 🎤 दबाओ (या SPACE दबाए रखो)। ऊपर LAB में 3D रोबोट देखो और हाथ से घुमाओ।\nAI जवाबों के लिए ⚙ SETTINGS में अपनी Gemini API Key पेस्ट करो।');
+  if (window.claude && window.claude.use) { window.claude.use('sample').then(function (s) { sample = s || null; }).catch(function () {}); }
+  if (window.speechSynthesis) { try { speechSynthesis.getVoices(); } catch (e) {} }
+  setTimeout(resizeAll, 60); requestAnimationFrame(frame);
+})();
+</script>
+<script>
+(function () {
+  var deferred = null, btn = document.getElementById('installBtn');
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferred = e; btn.hidden = false; });
+  btn.addEventListener('click', async function () { if (!deferred) return; deferred.prompt(); try { await deferred.userChoice; } catch (e) {} deferred = null; btn.hidden = true; });
+  window.addEventListener('appinstalled', function () { btn.hidden = true; });
+  if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) btn.hidden = true;
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('./sw.js').catch(function () {});
+})();
+</script>
+</body>
+</html>
